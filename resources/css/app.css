@@ -6,4 +6,81 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Palet masjid: hijau teduh sebagai warna utama, emas sebagai aksen. */
+    --color-masjid-50: #f0f7f4;
+    --color-masjid-100: #dbeee5;
+    --color-masjid-200: #b9ddcd;
+    --color-masjid-300: #8cc4ae;
+    --color-masjid-400: #5da58c;
+    --color-masjid-500: #3d8870;
+    --color-masjid-600: #2d6d5a;
+    --color-masjid-700: #26584a;
+    --color-masjid-800: #21463d;
+    --color-masjid-900: #1d3b34;
+    --color-masjid-950: #0e211d;
+
+    --color-emas-50: #fdf8ed;
+    --color-emas-100: #f8ecce;
+    --color-emas-200: #f0d698;
+    --color-emas-300: #e7ba62;
+    --color-emas-400: #e0a13d;
+    --color-emas-500: #d78526;
+    --color-emas-600: #be671e;
+    --color-emas-700: #9e4c1c;
+    --color-emas-800: #813d1d;
+    --color-emas-900: #6b331b;
+}
+
+/* Isi rich text dari admin panel dirender apa adanya, jadi butuh gaya dasar. */
+@layer components {
+    .prose-masjid :where(p) {
+        margin-block: 0.85em;
+        line-height: 1.75;
+    }
+
+    .prose-masjid :where(h2) {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-block: 1.4em 0.6em;
+        color: var(--color-masjid-800);
+    }
+
+    .prose-masjid :where(h3) {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-block: 1.2em 0.5em;
+        color: var(--color-masjid-800);
+    }
+
+    .prose-masjid :where(ul, ol) {
+        margin-block: 0.85em;
+        padding-inline-start: 1.5rem;
+        line-height: 1.75;
+    }
+
+    .prose-masjid :where(ul) {
+        list-style: disc;
+    }
+
+    .prose-masjid :where(ol) {
+        list-style: decimal;
+    }
+
+    .prose-masjid :where(a) {
+        color: var(--color-masjid-600);
+        text-decoration: underline;
+    }
+
+    .prose-masjid :where(blockquote) {
+        border-inline-start: 3px solid var(--color-masjid-300);
+        padding-inline-start: 1rem;
+        color: var(--color-masjid-700);
+        font-style: italic;
+    }
+
+    .prose-masjid :where(img) {
+        border-radius: 0.75rem;
+        margin-block: 1em;
+    }
 }
