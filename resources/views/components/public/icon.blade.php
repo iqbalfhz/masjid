@@ -19,9 +19,17 @@
     ];
 
     $path = $paths[$name] ?? $paths['sparkles'];
+
+    /*
+     * Kelas pemanggil menggantikan bawaan, tidak digabung — lihat catatan yang
+     * sama di komponen image: ukuran bawaan `h-5 w-5` akan mengalahkan `h-4 w-4`
+     * dari pemanggil karena urutannya lebih belakang di stylesheet.
+     */
+    $classes = $attributes->get('class') ?: 'h-5 w-5';
 @endphp
 
-<svg {{ $attributes->merge(['class' => 'h-5 w-5']) }} fill="none" stroke="currentColor" stroke-width="1.6"
+<svg {{ $attributes->except('class') }} class="{{ $classes }}"
+     fill="none" stroke="currentColor" stroke-width="1.6"
      viewBox="0 0 24 24" aria-hidden="true">
     <path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/>
 </svg>

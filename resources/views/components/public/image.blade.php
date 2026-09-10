@@ -1,16 +1,25 @@
 @props(['src' => null, 'alt' => ''])
 
-{{--
-    Gambar dengan cadangan: bila berkasnya hilang atau gagal dimuat, otomatis
-    diganti gambar placeholder supaya tata letak tidak rusak.
---}}
 @php
+    /*
+     * Gambar dengan cadangan: berkas yang hilang otomatis diganti placeholder
+     * supaya tata letak tidak rusak.
+     *
+     * Kelas dari pemanggil MENGGANTI bawaan, bukan digabung. Tailwind memilih
+     * pemenang berdasarkan urutan di stylesheet, bukan urutan penulisan di
+     * atribut — menggabungkan `h-full w-full` bawaan dengan `h-24 w-24` dari
+     * pemanggil membuat foto pengurus melar memenuhi kartu.
+     */
     $fallback = asset('images/placeholder.svg');
+    $classes = $attributes->get('class') ?: 'h-full w-full object-cover';
 @endphp
 
-<img src="{{ $src ?: $fallback }}"
-     alt="{{ $alt }}"
-     loading="lazy"
-     decoding="async"
-     onerror="this.onerror=null;this.src='{{ $fallback }}';this.classList.add('object-contain','p-6','opacity-60')"
-     {{ $attributes->merge(['class' => 'h-full w-full object-cover']) }}>
+<img
+    {{ $attributes->except('class') }}
+    src="{{ $src ?: $fallback }}"
+    alt="{{ $alt }}"
+    loading="lazy"
+    decoding="async"
+    class="{{ $classes }}"
+    onerror="this.onerror=null;this.src='{{ $fallback }}'"
+>
