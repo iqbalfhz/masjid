@@ -80,7 +80,8 @@ class EventForm
                     ->schema([
                         Toggle::make('rsvp_enabled')
                             ->label('Buka RSVP di website publik')
-                            ->live(),
+                            ->live()
+                            ->columnSpan(fn (Get $get): int => $get('rsvp_enabled') ? 1 : 2),
 
                         TextInput::make('rsvp_quota')
                             ->label('Kuota peserta')

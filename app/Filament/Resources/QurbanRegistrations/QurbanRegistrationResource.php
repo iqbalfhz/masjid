@@ -104,7 +104,8 @@ class QurbanRegistrationResource extends Resource
                         ->label('Status pembayaran')
                         ->options(PaymentStatus::class)
                         ->default(PaymentStatus::BelumBayar)
-                        ->required(),
+                        ->required()
+                        ->columnSpanFull(),
                 ]),
         ]);
     }

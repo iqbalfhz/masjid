@@ -70,7 +70,8 @@ class SuggestionResource extends Resource
                     Select::make('status')
                         ->label('Status')
                         ->options(SuggestionStatus::class)
-                        ->required(),
+                        ->required()
+                        ->columnSpanFull(),
 
                     Textarea::make('response_note')
                         ->label('Catatan tindak lanjut')

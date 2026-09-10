@@ -59,11 +59,11 @@ class FinanceTransactionForm
                             ->maxLength(255)
                             ->helperText('Opsional: nomor kuitansi atau referensi transfer.'),
 
+                        // Disandingkan dengan nomor bukti agar baris terakhir tidak menyisakan sel kosong.
                         Textarea::make('description')
                             ->label('Keterangan')
-                            ->rows(2)
-                            ->required()
-                            ->columnSpanFull(),
+                            ->rows(3)
+                            ->required(),
                     ])
                     ->columns(2),
             ]);

@@ -68,7 +68,8 @@ class FaqResource extends Resource
 
             Toggle::make('is_published')
                 ->label('Tampilkan di website')
-                ->default(true),
+                ->default(true)
+                ->columnSpanFull(),
         ])->columns(2);
     }
 

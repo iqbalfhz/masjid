@@ -68,7 +68,8 @@ class FinanceCategoryResource extends Resource
             Toggle::make('is_active')
                 ->label('Aktif')
                 ->default(true)
-                ->helperText('Kategori nonaktif tidak muncul saat input transaksi baru.'),
+                ->helperText('Kategori nonaktif tidak muncul saat input transaksi baru.')
+                ->columnSpanFull(),
         ])->columns(2);
     }
 

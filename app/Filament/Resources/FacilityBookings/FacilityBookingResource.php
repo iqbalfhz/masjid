@@ -95,7 +95,8 @@ class FacilityBookingResource extends Resource
                         ->label('Jam selesai')
                         ->seconds(false)
                         ->after('start_time')
-                        ->required(),
+                        ->required()
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
 

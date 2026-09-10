@@ -70,8 +70,7 @@ class ArticleForm
                             ->maxSize(4096),
 
                         TagsInput::make('tags')
-                            ->label('Tag')
-                            ->columnSpanFull(),
+                            ->label('Tag'),
                     ])
                     ->columns(2),
 

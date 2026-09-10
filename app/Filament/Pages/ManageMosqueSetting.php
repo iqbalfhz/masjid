@@ -12,7 +12,11 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Pages\Concerns\InteractsWithFormActions;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -28,6 +32,8 @@ use UnitEnum;
  */
 class ManageMosqueSetting extends Page
 {
+    use InteractsWithFormActions;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
     protected static string|UnitEnum|null $navigationGroup = 'Sistem';
@@ -37,8 +43,6 @@ class ManageMosqueSetting extends Page
     protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'pengaturan';
-
-    protected string $view = 'filament.pages.manage-mosque-setting';
 
     /**
      * @var array<string, mixed>
@@ -58,6 +62,23 @@ class ManageMosqueSetting extends Page
     public function mount(): void
     {
         $this->form->fill(MosqueSetting::current()->attributesToArray());
+    }
+
+    /**
+     * Susun isi halaman lewat schema bawaan Filament: form dibungkus elemen
+     * <form> dengan satu baris tombol di footernya. Cara ini memastikan hanya
+     * ada satu tombol simpan dan menekan Enter di field ikut menyimpan.
+     */
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            Form::make([EmbeddedSchema::make('form')])
+                ->id('form')
+                ->livewireSubmitHandler('save')
+                ->footer([
+                    Actions::make($this->getFormActions())->key('form-actions'),
+                ]),
+        ]);
     }
 
     public function form(Schema $schema): Schema
@@ -198,17 +219,26 @@ class ManageMosqueSetting extends Page
     }
 
     /**
+     * Tombol simpan hanya satu, diletakkan di bawah form mengikuti pola
+     * "Buat / Batal" pada resource lain. Sebelumnya tombol yang sama juga
+     * dipasang sebagai header action sehingga tampil dua kali.
+     *
      * @return array<Action>
      */
-    protected function getHeaderActions(): array
+    public function getFormActions(): array
     {
         return [
             Action::make('save')
                 ->label('Simpan pengaturan')
                 ->icon('heroicon-o-check')
-                ->action('save')
-                ->visible(fn (): bool => Auth::user()?->can('update', MosqueSetting::current()) === true),
+                ->submit('save')
+                ->visible(fn (): bool => $this->canEdit()),
         ];
+    }
+
+    public function canEdit(): bool
+    {
+        return Auth::user()?->can('update', MosqueSetting::current()) === true;
     }
 
     public function save(): void

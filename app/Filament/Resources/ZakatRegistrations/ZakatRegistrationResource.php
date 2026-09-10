@@ -85,7 +85,8 @@ class ZakatRegistrationResource extends Resource
                         ->label('Nominal')
                         ->numeric()
                         ->prefix('Rp')
-                        ->required(fn (Get $get): bool => $get('zakat_type') === ZakatType::Maal->value),
+                        ->required(fn (Get $get): bool => $get('zakat_type') === ZakatType::Maal->value)
+                        ->columnSpan(fn (Get $get): int => $get('zakat_type') === ZakatType::Fitrah->value ? 2 : 1),
 
                     Textarea::make('notes')
                         ->label('Catatan')
@@ -100,7 +101,8 @@ class ZakatRegistrationResource extends Resource
                         ->label('Status pembayaran')
                         ->options(PaymentStatus::class)
                         ->default(PaymentStatus::BelumBayar)
-                        ->required(),
+                        ->required()
+                        ->columnSpanFull(),
                 ]),
         ]);
     }

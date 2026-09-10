@@ -15,6 +15,10 @@ use Saade\FilamentFullCalendar\Widgets\FullCalendarWidget;
  * Sumber data kalender kegiatan admin: kajian insidental, kegiatan, dan
  * peminjaman fasilitas. Kajian rutin mingguan diproyeksikan ke setiap tanggal
  * dalam rentang yang sedang dilihat.
+ *
+ * Kalender ini murni tampilan ringkasan (PRD 5.2.2), jadi seluruh aksi
+ * bawaan widget dimatikan. Setiap entri membawa `url` ke halaman edit record
+ * aslinya, sehingga klik pada agenda langsung membuka modul yang tepat.
  */
 class ActivityCalendarWidget extends FullCalendarWidget
 {
@@ -32,6 +36,25 @@ class ActivityCalendarWidget extends FullCalendarWidget
             'editable' => false,
             'selectable' => false,
         ];
+    }
+
+    /**
+     * Agenda tidak dibuat dari kalender — pembuatan record dilakukan di modul
+     * masing-masing agar alur approval-nya tetap utuh.
+     *
+     * @return array<int, mixed>
+     */
+    protected function headerActions(): array
+    {
+        return [];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    protected function modalActions(): array
+    {
+        return [];
     }
 
     /**
@@ -59,6 +82,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
 
         foreach (Study::query()->whereNot('status', ContentStatus::Ditolak)->get() as $study) {
             $color = $study->status === ContentStatus::Disetujui ? '#0d9488' : '#94a3b8';
+            $url = route('filament.admin.resources.studies.edit', $study);
 
             if ($study->schedule_type === ScheduleType::Insidental) {
                 if ($study->start_date === null || ! $study->start_date->between($start, $end)) {
@@ -71,6 +95,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
                     $study->start_date->toDateString().'T'.$study->time,
                     $study->end_time ? $study->start_date->toDateString().'T'.$study->end_time : null,
                     $color,
+                    $url,
                 );
 
                 continue;
@@ -88,6 +113,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
                     $date->toDateString().'T'.$study->time,
                     $study->end_time ? $date->toDateString().'T'.$study->end_time : null,
                     $color,
+                    $url,
                 );
             }
         }
@@ -110,6 +136,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
                 $event->event_date->toDateString().($event->start_time ? 'T'.$event->start_time : ''),
                 $event->end_time ? $event->event_date->toDateString().'T'.$event->end_time : null,
                 $event->status === ContentStatus::Disetujui ? '#c2760a' : '#94a3b8',
+                route('filament.admin.resources.events.edit', $event),
             ))
             ->all();
     }
@@ -130,6 +157,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
                 $booking->booking_date->toDateString().'T'.$booking->start_time,
                 $booking->booking_date->toDateString().'T'.$booking->end_time,
                 $booking->status === BookingStatus::Disetujui ? '#7c3aed' : '#94a3b8',
+                route('filament.admin.resources.facility-bookings.edit', $booking),
             ))
             ->all();
     }
@@ -137,7 +165,7 @@ class ActivityCalendarWidget extends FullCalendarWidget
     /**
      * @return array<string, mixed>
      */
-    private function entry(string $id, string $title, string $start, ?string $end, string $color): array
+    private function entry(string $id, string $title, string $start, ?string $end, string $color, string $url): array
     {
         return [
             'id' => $id,
@@ -146,6 +174,8 @@ class ActivityCalendarWidget extends FullCalendarWidget
             'end' => $end,
             'backgroundColor' => $color,
             'borderColor' => $color,
+            // FullCalendar menavigasi ke url ini alih-alih membuka modal.
+            'url' => $url,
         ];
     }
 }
