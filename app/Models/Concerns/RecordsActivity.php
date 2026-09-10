@@ -2,6 +2,8 @@
 
 namespace App\Models\Concerns;
 
+use App\Support\ActivityLogPresenter;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
@@ -31,20 +33,29 @@ trait RecordsActivity
 
     public function getDescriptionForEvent(string $eventName): string
     {
+        $modul = Str::lower($this->activityModuleLabel());
+
         return match ($eventName) {
-            'created' => 'Membuat '.$this->activityLogName(),
-            'updated' => 'Mengubah '.$this->activityLogName(),
-            'deleted' => 'Menghapus '.$this->activityLogName(),
-            default => $eventName.' '.$this->activityLogName(),
+            'created' => "Menambahkan {$modul}",
+            'updated' => "Mengubah {$modul}",
+            'deleted' => "Menghapus {$modul}",
+            default => Str::headline($eventName)." {$modul}",
         };
     }
 
     /**
-     * Label modul yang muncul di Log Aktivitas.
+     * Kunci modul yang stabil untuk penyaringan (snake_case nama model).
+     * Label yang dibaca pengurus diterjemahkan saat ditampilkan.
      */
     public function activityLogName(): string
     {
-        return str(class_basename($this))->headline()->lower()->value();
+        return Str::snake(class_basename($this));
+    }
+
+    public function activityModuleLabel(): string
+    {
+        return ActivityLogPresenter::MODULES[$this->activityLogName()]
+            ?? Str::headline(class_basename($this));
     }
 
     /**

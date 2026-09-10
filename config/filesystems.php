@@ -38,10 +38,20 @@ return [
             'report' => false,
         ],
 
+        /*
+         * URL berkas publik sengaja dibuat relatif, bukan diturunkan dari
+         * APP_URL. Aplikasi menyajikan berkasnya sendiri, sehingga URL relatif
+         * selalu satu origin dengan halaman yang sedang dibuka — entah lewat
+         * localhost, 127.0.0.1, domain Herd, atau IP jaringan lokal.
+         *
+         * Dengan URL absolut, membuka panel dari origin yang berbeda dari
+         * APP_URL membuat pratinjau unggahan Filament terhenti di "Menunggu
+         * ukuran berkas" karena permintaannya diblokir sebagai lintas-origin.
+         */
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'url' => '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

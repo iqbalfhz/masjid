@@ -4,10 +4,11 @@ namespace App\Filament\Resources\ActivityLogs;
 
 use App\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Models\User;
+use App\Support\ActivityLogPresenter;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -26,6 +27,9 @@ use UnitEnum;
  *
  * Read-only untuk semua role, termasuk Superadmin: catatan tidak boleh
  * diubah atau dihapus lewat panel agar tetap bisa dipertanggungjawabkan.
+ *
+ * Seluruh nama modul, aksi, kolom, dan nilainya diterjemahkan lewat
+ * ActivityLogPresenter supaya terbaca oleh pengurus yang bukan teknis.
  */
 class ActivityLogResource extends Resource
 {
@@ -37,9 +41,9 @@ class ActivityLogResource extends Resource
 
     protected static ?string $navigationLabel = 'Log Aktivitas';
 
-    protected static ?string $modelLabel = 'log aktivitas';
+    protected static ?string $modelLabel = 'catatan aktivitas';
 
-    protected static ?string $pluralModelLabel = 'log aktivitas';
+    protected static ?string $pluralModelLabel = 'catatan aktivitas';
 
     protected static ?int $navigationSort = 3;
 
@@ -65,81 +69,105 @@ class ActivityLogResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
+        $presenter = app(ActivityLogPresenter::class);
+
         return $schema->components([
             Section::make('Ringkasan')
                 ->schema([
-                    TextEntry::make('created_at')->label('Waktu')->dateTime('d F Y, H:i:s'),
-                    TextEntry::make('causer.name')->label('Pelaku')->placeholder('Sistem'),
-                    TextEntry::make('log_name')->label('Modul')->badge(),
-                    TextEntry::make('event')->label('Aksi')->badge(),
-                    TextEntry::make('description')->label('Keterangan')->columnSpanFull(),
-                    TextEntry::make('subject_type')->label('Record')->formatStateUsing(
-                        fn (?string $state, Activity $record): string => $state === null
-                            ? '—'
-                            : class_basename($state).' #'.$record->subject_id
-                    ),
+                    TextEntry::make('created_at')
+                        ->label('Waktu')
+                        ->dateTime('l, d F Y, H:i')
+                        ->suffix(' WIB'),
+
+                    TextEntry::make('causer')
+                        ->label('Dilakukan oleh')
+                        ->state(fn (Activity $record): string => $presenter->causerName($record)),
+
+                    TextEntry::make('log_name')
+                        ->label('Modul')
+                        ->badge()
+                        ->state(fn (Activity $record): string => $presenter->moduleLabel($record)),
+
+                    TextEntry::make('event')
+                        ->label('Aksi')
+                        ->badge()
+                        ->state(fn (Activity $record): string => $presenter->eventLabel($record->event))
+                        ->color(fn (Activity $record): string => $presenter->eventColor($record->event)),
+
+                    TextEntry::make('subject')
+                        ->label('Data yang disentuh')
+                        ->state(fn (Activity $record): string => $presenter->recordLabel($record))
+                        ->columnSpanFull(),
                 ])
                 ->columns(2),
 
-            Section::make('Perubahan Data')
+            Section::make(fn (Activity $record): string => $presenter->changesHeading($record))
+                ->description(fn (Activity $record): ?string => $presenter->isComparison($record)
+                    ? 'Perbandingan nilai sebelum dan sesudah perubahan.'
+                    : 'Nilai yang tercatat saat aksi ini dilakukan.')
                 ->schema([
-                    KeyValueEntry::make('attribute_changes.old')
-                        ->label('Sebelum')
-                        ->keyLabel('Kolom')
-                        ->valueLabel('Nilai lama'),
+                    RepeatableEntry::make('perubahan')
+                        ->hiddenLabel()
+                        ->state(fn (Activity $record): array => $presenter->changes($record))
+                        ->schema([
+                            TextEntry::make('kolom')
+                                ->label('Yang diubah')
+                                ->weight('medium'),
 
-                    KeyValueEntry::make('attribute_changes.attributes')
-                        ->label('Sesudah')
-                        ->keyLabel('Kolom')
-                        ->valueLabel('Nilai baru'),
+                            // Pada data baru atau terhapus kolom ini berisi "—",
+                            // menandakan memang tidak ada nilai pembanding.
+                            TextEntry::make('sebelum')
+                                ->label('Sebelumnya')
+                                ->color('gray'),
+
+                            TextEntry::make('sesudah')
+                                ->label('Nilai tercatat')
+                                ->color('success'),
+                        ])
+                        ->columns(3),
                 ])
-                ->columns(2)
-                ->collapsible(),
+                ->visible(fn (Activity $record): bool => $presenter->changes($record) !== []),
         ]);
     }
 
     public static function table(Table $table): Table
     {
+        $presenter = app(ActivityLogPresenter::class);
+
         return $table
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Waktu')
-                    ->dateTime('d M Y H:i')
-                    ->sortable(),
+                    ->dateTime('d M Y, H:i')
+                    ->sortable()
+                    ->description(fn (Activity $record): string => $record->created_at->diffForHumans()),
 
                 TextColumn::make('causer.name')
                     ->label('Pelaku')
-                    ->placeholder('Sistem')
+                    ->state(fn (Activity $record): string => $presenter->causerName($record))
                     ->searchable(),
-
-                TextColumn::make('log_name')
-                    ->label('Modul')
-                    ->badge()
-                    ->color('gray'),
 
                 TextColumn::make('event')
                     ->label('Aksi')
                     ->badge()
-                    ->color(fn (?string $state): string => match ($state) {
-                        'created' => 'success',
-                        'updated' => 'info',
-                        'deleted' => 'danger',
-                        'approved' => 'success',
-                        'rejected' => 'danger',
-                        'submitted' => 'warning',
-                        default => 'gray',
-                    }),
+                    ->state(fn (Activity $record): string => $presenter->eventLabel($record->event))
+                    ->color(fn (Activity $record): string => $presenter->eventColor($record->event)),
+
+                TextColumn::make('log_name')
+                    ->label('Modul')
+                    ->badge()
+                    ->color('gray')
+                    ->state(fn (Activity $record): string => $presenter->moduleLabel($record)),
+
+                TextColumn::make('subject_id')
+                    ->label('Data yang disentuh')
+                    ->state(fn (Activity $record): string => $presenter->recordLabel($record))
+                    ->wrap(),
 
                 TextColumn::make('description')
-                    ->label('Keterangan')
-                    ->wrap()
-                    ->limit(70),
-
-                TextColumn::make('subject_type')
-                    ->label('Record')
-                    ->formatStateUsing(fn (?string $state, Activity $record): string => $state === null
-                        ? '—'
-                        : class_basename($state).' #'.$record->subject_id)
+                    ->label('Ringkasan perubahan')
+                    ->state(fn (Activity $record): string => $presenter->changeSummary($record))
+                    ->color('gray')
                     ->toggleable(),
             ])
             ->defaultSort('created_at', 'desc')
@@ -149,20 +177,18 @@ class ActivityLogResource extends Resource
                     ->options(fn (): array => Activity::query()
                         ->whereNotNull('log_name')
                         ->distinct()
-                        ->pluck('log_name', 'log_name')
+                        ->pluck('log_name')
+                        ->mapWithKeys(fn (string $name): array => [
+                            $name => ActivityLogPresenter::MODULES[str_replace(' ', '_', $name)] ?? $name,
+                        ])
+                        ->sort()
                         ->all()),
 
                 SelectFilter::make('event')
                     ->label('Aksi')
-                    ->options([
-                        'created' => 'Membuat',
-                        'updated' => 'Mengubah',
-                        'deleted' => 'Menghapus',
-                        'submitted' => 'Mengajukan approval',
-                        'approved' => 'Menyetujui',
-                        'rejected' => 'Menolak',
-                        'login' => 'Login',
-                    ]),
+                    ->options(collect(ActivityLogPresenter::EVENTS)
+                        ->map(fn (array $event): string => $event['label'])
+                        ->all()),
 
                 SelectFilter::make('causer_id')
                     ->label('Pelaku')
@@ -180,8 +206,17 @@ class ActivityLogResource extends Resource
                         ->when($data['until'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '<=', $date))),
             ])
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()->label('Rincian'),
             ]);
+    }
+
+    /**
+     * Pelaku dan record dimuat sekaligus agar tabel tidak menembak query
+     * tambahan per baris.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['causer', 'subject']);
     }
 
     public static function getPages(): array

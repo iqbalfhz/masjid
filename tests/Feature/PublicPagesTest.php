@@ -13,6 +13,7 @@ use App\Models\LibraryMaterial;
 use App\Models\PrayerSchedule;
 use App\Models\Study;
 use App\Models\Testimonial;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
     seedMasterData();
@@ -202,4 +203,18 @@ it('memberi tahu ketika nomor pengajuan tidak ditemukan', function (): void {
     $this->get('/peminjaman-fasilitas/status?nomor=PJF-TIDAK-ADA')
         ->assertSuccessful()
         ->assertSee('tidak ditemukan');
+});
+
+it('menyajikan berkas unggahan lewat URL relatif agar aman dari beda origin', function (): void {
+    // URL absolut yang diturunkan dari APP_URL membuat pratinjau unggahan di
+    // admin panel gagal dimuat ketika panel dibuka dari host lain.
+    expect(Storage::url('donasi/qris.png'))->toBe('/storage/donasi/qris.png')
+        ->and(config('filesystems.disks.public.url'))->toBe('/storage');
+});
+
+it('mengarahkan unduhan materi lokal ke host aplikasi', function (): void {
+    $material = LibraryMaterial::factory()->create(['file_path' => 'e-library/materi.pdf']);
+
+    $this->get(route('e-library.unduh', $material))
+        ->assertRedirect(url('/storage/e-library/materi.pdf'));
 });

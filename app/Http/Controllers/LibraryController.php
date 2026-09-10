@@ -50,6 +50,14 @@ class LibraryController extends Controller
 
         $material->increment('downloads');
 
-        return redirect()->away($url);
+        /*
+         * Materi bisa berupa tautan eksternal (YouTube, Drive) atau berkas milik
+         * masjid sendiri. Berkas lokal memakai URL relatif, jadi diarahkan lewat
+         * to() agar dilengkapi host aplikasi; tautan eksternal harus lewat away()
+         * supaya tidak ikut diberi prefix.
+         */
+        return str_starts_with($url, 'http')
+            ? redirect()->away($url)
+            : redirect()->to($url);
     }
 }
