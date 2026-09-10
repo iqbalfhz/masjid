@@ -23,9 +23,9 @@
                 </form>
             </x-public.card>
 
-            <x-public.card class="!p-0">
+            <x-public.card class="p-0!">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] text-sm">
+                    <table class="w-full min-w-160 text-sm">
                         <caption class="px-5 py-4 text-left text-base font-semibold text-masjid-900">
                             Jadwal {{ $month->translatedFormat('F Y') }}
                         </caption>
@@ -79,13 +79,28 @@
 
                     @if ($nextPrayer)
                         <p class="mt-4 text-sm text-masjid-100">Waktu berikutnya</p>
-                        <p class="text-2xl font-semibold">{{ $nextPrayer['label'] }} &middot; {{ $nextPrayer['time']->format('H:i') }}</p>
+                        <p class="text-2xl font-semibold">
+                            {{ $nextPrayer['label'] }}
+                            <span class="text-base font-normal text-masjid-100">
+                                &middot; {{ $nextPrayer['time']->isToday() ? '' : 'besok ' }}{{ $nextPrayer['time']->format('H:i') }}
+                            </span>
+                        </p>
                     @endif
 
                     <dl class="mt-4 space-y-1.5 text-sm">
                         @foreach ($todaySchedule->times() as $key => $time)
-                            <div class="flex items-center justify-between border-b border-white/10 pb-1.5 last:border-0">
-                                <dt class="text-masjid-100">{{ \App\Models\PrayerSchedule::PRAYERS[$key] }}</dt>
+                            @php
+                                $aktif = $nextPrayer
+                                    && $nextPrayer['key'] === $key
+                                    && $nextPrayer['time']->isSameDay($todaySchedule->date);
+                            @endphp
+                            <div @class([
+                                'flex items-center justify-between rounded-lg border-b border-white/10 px-2 py-1.5 last:border-0',
+                                'bg-emas-500/90' => $aktif,
+                            ])>
+                                <dt class="{{ $aktif ? 'font-medium text-white' : 'text-masjid-100' }}">
+                                    {{ \App\Models\PrayerSchedule::PRAYERS[$key] }}
+                                </dt>
                                 <dd class="font-medium tabular-nums">{{ substr($time, 0, 5) }}</dd>
                             </div>
                         @endforeach

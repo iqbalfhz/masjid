@@ -76,9 +76,9 @@
         <section>
             <x-public.section-heading title="Rincian transaksi" />
 
-            <x-public.card class="!p-0">
+            <x-public.card class="p-0!">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] text-sm">
+                    <table class="w-full min-w-160 text-sm">
                         <thead class="bg-masjid-50 text-left text-xs uppercase tracking-wide text-masjid-600">
                             <tr>
                                 <th scope="col" class="px-5 py-3">Tanggal</th>
@@ -144,7 +144,7 @@
             <section>
                 <x-public.section-heading title="Ringkasan 12 bulan" />
 
-                <x-public.card class="!p-0">
+                <x-public.card class="p-0!">
                     <div class="max-h-96 overflow-y-auto">
                         <table class="w-full text-sm">
                             <thead class="sticky top-0 bg-masjid-50 text-left text-xs uppercase tracking-wide text-masjid-600">

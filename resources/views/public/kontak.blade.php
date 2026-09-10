@@ -37,7 +37,7 @@
             </x-public.card>
 
             @if ($setting->maps_embed_url)
-                <x-public.card class="!p-0 overflow-hidden">
+                <x-public.card class="p-0! overflow-hidden">
                     <iframe src="{{ $setting->maps_embed_url }}"
                             title="Peta lokasi {{ $setting->name }}"
                             class="h-80 w-full border-0"

@@ -32,7 +32,7 @@
             @else
                 <div class="grid gap-4 sm:grid-cols-2">
                     @foreach ($articles as $article)
-                        <x-public.card as="article" class="flex flex-col overflow-hidden !p-0">
+                        <x-public.card as="article" class="flex flex-col overflow-hidden p-0!">
                             <x-public.image :src="$article->cover_image ? Storage::url($article->cover_image) : null" class="h-40 w-full object-cover" />
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="flex flex-wrap items-center gap-2 text-xs text-masjid-500">
