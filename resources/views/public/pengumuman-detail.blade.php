@@ -10,7 +10,7 @@
         <span class="text-masjid-800">Pengumuman</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             <div class="flex flex-wrap items-center gap-3 text-sm text-masjid-500">
                 <x-public.badge :color="$announcement->priority === \App\Enums\AnnouncementPriority::Tinggi ? 'emas' : 'gray'">
@@ -49,7 +49,7 @@
                 </x-public.card>
             @endif
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Jangan sampai ketinggalan</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Aktifkan pengingat waktu sholat sekaligus pantau pengumuman terbaru dari beranda.

@@ -8,7 +8,7 @@
         title="Layanan Kurban & Aqiqah"
         subtitle="Isi formulir berikut untuk mendaftar. Pembayaran dilakukan manual lewat transfer ke rekening panitia." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <x-public.card>
             <form action="{{ route('kurban.store') }}" method="post" class="relative space-y-5">
                 @csrf
@@ -67,7 +67,7 @@
                 </x-public.card>
             @endif
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Butuh penjelasan lebih dulu?</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Hubungi panitia kurban di sekretariat DKM, {{ $setting->address }}.

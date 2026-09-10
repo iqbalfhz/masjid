@@ -3,6 +3,7 @@
 use App\Models\PrayerSchedule;
 use App\Models\PushSubscription;
 use App\Services\PrayerScheduleService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -161,4 +162,34 @@ it('menyusun isi notifikasi pengingat dari jadwal terdekat', function (): void {
         ->assertSuccessful()
         ->assertJsonPath('title', 'Menjelang Maghrib')
         ->assertJsonFragment(['url' => route('jadwal-sholat')]);
+});
+
+it('memakai zona waktu masjid, bukan UTC', function (): void {
+    expect(config('app.timezone'))->toBe('Asia/Jakarta')
+        ->and(now()->getTimezone()->getName())->toBe('Asia/Jakarta');
+});
+
+it('memilih Subuh esok hari ketika jam dinding masjid sudah lewat Isya', function (): void {
+    // Jam 21:00 WIB: seluruh waktu sholat hari ini sudah terlewat. Ketika
+    // aplikasi keliru berjalan di UTC, jam ini terbaca 14:00 dan Ashar
+    // ikut terpilih sebagai waktu berikutnya.
+    PrayerSchedule::factory()->create(['date' => '2026-09-10']);
+    PrayerSchedule::factory()->create(['date' => '2026-09-11', 'fajr' => '04:33:00']);
+
+    $this->travelTo(Carbon::parse('2026-09-10 21:00:00', 'Asia/Jakarta'));
+
+    $next = app(PrayerScheduleService::class)->nextPrayer();
+
+    expect($next['key'])->toBe('fajr')
+        ->and($next['time']->toDateString())->toBe('2026-09-11')
+        ->and($next['time']->format('H:i'))->toBe('04:33');
+});
+
+it('menghitung waktu berikutnya dari jam dinding lokal, bukan offset UTC', function (): void {
+    PrayerSchedule::factory()->create(['date' => '2026-09-10']);
+
+    // 16:00 WIB berada di antara Ashar (15:15) dan Maghrib (18:05).
+    $this->travelTo(Carbon::parse('2026-09-10 16:00:00', 'Asia/Jakarta'));
+
+    expect(app(PrayerScheduleService::class)->nextPrayer()['key'])->toBe('maghrib');
 });

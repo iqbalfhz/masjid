@@ -43,9 +43,7 @@
                             </span>
                         </a>
                     @else
-                        <img src="{{ $item->url() ?? asset('images/placeholder.svg') }}"
-                             alt="{{ $item->caption ?? 'Dokumentasi '.$album->title }}"
-                             loading="lazy" class="h-44 w-full object-cover">
+                        <x-public.image :src="$item->url()" :alt="$item->caption ?? 'Dokumentasi '.$album->title" class="h-44 w-full object-cover" />
                     @endif
 
                     @if ($item->caption)

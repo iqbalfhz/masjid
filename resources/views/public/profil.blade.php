@@ -8,7 +8,7 @@
         title="Profil Masjid"
         :subtitle="$setting->tagline" />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             @if ($setting->history)
                 <x-public.card>
@@ -48,8 +48,7 @@
                     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         @foreach ($boardMembers as $member)
                             <x-public.card as="article" class="text-center">
-                                <img src="{{ $member->photo ? Storage::url($member->photo) : asset('images/placeholder.svg') }}"
-                                     alt="" class="mx-auto h-24 w-24 rounded-full object-cover">
+                                <x-public.image :src="$member->photo ? Storage::url($member->photo) : null" class="mx-auto h-24 w-24 rounded-full object-cover" />
                                 <h3 class="mt-3 font-semibold text-masjid-900">{{ $member->name }}</h3>
                                 <p class="text-sm text-masjid-600">{{ $member->position }}</p>
                                 <p class="mt-1 text-xs text-masjid-500">Periode {{ $member->periodLabel() }}</p>

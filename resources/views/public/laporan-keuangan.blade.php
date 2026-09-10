@@ -17,7 +17,7 @@
             <p class="text-sm text-masjid-600">Total pengeluaran</p>
             <p class="mt-1 text-xl font-semibold text-masjid-800">Rp {{ number_format($totals['expense'], 0, ',', '.') }}</p>
         </x-public.card>
-        <x-public.card class="bg-masjid-800 text-white">
+        <x-public.card tone="dark">
             <p class="text-sm text-masjid-100">Saldo</p>
             <p class="mt-1 text-xl font-semibold">Rp {{ number_format($totals['balance'], 0, ',', '.') }}</p>
             <p class="mt-1 text-xs text-masjid-200">{{ $totals['count'] }} transaksi tercatat</p>
@@ -72,7 +72,7 @@
         </div>
     </x-public.card>
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section>
             <x-public.section-heading title="Rincian transaksi" />
 

@@ -8,7 +8,7 @@
         title="Buku Tamu & Testimoni"
         subtitle="Kesan dan pesan dari jamaah. Setiap pesan ditinjau pengurus sebelum ditampilkan." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div>
             @if ($testimonials->isEmpty())
                 <x-public.empty-state message="Belum ada pesan yang tayang. Jadilah yang pertama menulis." />

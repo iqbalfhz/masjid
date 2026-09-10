@@ -8,7 +8,7 @@
         title="Layanan Zakat"
         subtitle="Daftarkan zakat fitrah maupun zakat maal Anda. Pembayaran dilakukan manual ke panitia." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <x-public.card>
             <form action="{{ route('zakat.store') }}" method="post" class="relative space-y-5">
                 @csrf

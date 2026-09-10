@@ -10,11 +10,10 @@
         <span class="text-masjid-800">{{ Str::limit($article->title, 60) }}</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             @if ($article->cover_image)
-                <img src="{{ Storage::url($article->cover_image) }}" alt=""
-                     class="mb-6 w-full rounded-2xl object-cover">
+                <x-public.image :src="Storage::url($article->cover_image)" class="mb-6 w-full rounded-2xl object-cover" />
             @endif
 
             <div class="flex flex-wrap items-center gap-3 text-sm text-masjid-500">
@@ -60,7 +59,7 @@
                 </x-public.card>
             @endif
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Ikut kajian langsung</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Belajar lebih dalam bersama para ustadz di majelis ilmu Masjid An-Nur.

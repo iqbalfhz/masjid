@@ -47,8 +47,7 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($events as $event)
                 <x-public.card as="article" class="flex flex-col overflow-hidden !p-0">
-                    <img src="{{ $event->poster_image ? Storage::url($event->poster_image) : asset('images/placeholder.svg') }}"
-                         alt="" class="h-40 w-full object-cover">
+                    <x-public.image :src="$event->poster_image ? Storage::url($event->poster_image) : null" class="h-40 w-full object-cover" />
                     <div class="flex flex-1 flex-col p-5">
                         <p class="text-xs font-semibold uppercase tracking-wide text-emas-600">
                             {{ $event->event_date->translatedFormat('l, d F Y') }}

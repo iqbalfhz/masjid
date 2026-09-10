@@ -60,12 +60,18 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions.
+    |
+    | Aplikasi ini memakai waktu lokal masjid, bukan UTC: jadwal sholat dari
+    | API dan seluruh label "WIB" di halaman publik mengacu pada jam dinding
+    | setempat. Menjalankannya di UTC membuat perhitungan "waktu sholat
+    | berikutnya" meleset sebesar selisih zona waktu. Nilainya dibuat
+    | env-driven agar codebase ini tetap bisa dipakai ulang oleh masjid di
+    | zona waktu lain (WITA/WIT).
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Jakarta'),
 
     /*
     |--------------------------------------------------------------------------

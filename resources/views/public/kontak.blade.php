@@ -8,7 +8,7 @@
         title="Kontak & Lokasi"
         subtitle="Kami berada di dalam area Tangcity Mall dan terbuka untuk seluruh jamaah." />
 
-    <div class="grid gap-8 lg:grid-cols-[1.2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <h2 class="font-semibold text-masjid-900">Alamat</h2>
@@ -62,8 +62,7 @@
                     <div class="grid gap-4 sm:grid-cols-2">
                         @foreach ($contacts as $contact)
                             <x-public.card class="flex items-center gap-4">
-                                <img src="{{ $contact->photo ? Storage::url($contact->photo) : asset('images/placeholder.svg') }}"
-                                     alt="" class="h-14 w-14 shrink-0 rounded-full object-cover">
+                                <x-public.image :src="$contact->photo ? Storage::url($contact->photo) : null" class="h-14 w-14 shrink-0 rounded-full object-cover" />
                                 <div>
                                     <p class="font-medium text-masjid-900">{{ $contact->name }}</p>
                                     <p class="text-sm text-masjid-600">{{ $contact->position }}</p>
@@ -85,7 +84,7 @@
                 </ul>
             </x-public.card>
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Punya masukan?</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Sampaikan saran, keluhan, atau apresiasi Anda. Boleh anonim.

@@ -8,7 +8,7 @@
         title="Kotak Saran & Pengaduan"
         subtitle="Masukan Anda membantu pengurus memperbaiki pelayanan masjid." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <x-public.card>
             <form action="{{ route('saran.store') }}" method="post" class="relative space-y-5">
                 @csrf
@@ -49,7 +49,7 @@
                 </p>
             </x-public.card>
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Sudah cek FAQ?</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Banyak pertanyaan umum sudah dijawab di halaman FAQ.

@@ -8,7 +8,7 @@
         title="Peminjaman Fasilitas"
         subtitle="Ajukan pemakaian ruang masjid. Cek dulu kalender ketersediaan agar tidak bentrok dengan agenda lain." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <x-public.card>
             <form action="{{ route('fasilitas.store') }}" method="post" class="relative space-y-5">
                 @csrf
@@ -87,7 +87,7 @@
                 </ul>
             </x-public.card>
 
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="font-semibold">Sudah pernah mengajukan?</h2>
                 <p class="mt-1 text-sm text-masjid-100">
                     Cek status pengajuan Anda dengan nomor pengajuan yang diterima sebelumnya.

@@ -8,7 +8,7 @@
         title="Cek Status Peminjaman"
         subtitle="Masukkan nomor pengajuan yang Anda terima saat mengirim formulir." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <form method="get" class="flex flex-wrap items-end gap-3">
@@ -22,7 +22,7 @@
             </x-public.card>
 
             @if ($number !== '' && ! $booking)
-                <x-public.card class="border-red-200 bg-red-50">
+                <x-public.card tone="danger">
                     <p class="font-medium text-red-800">Nomor pengajuan tidak ditemukan.</p>
                     <p class="mt-1 text-sm text-red-700">
                         Periksa kembali penulisannya, atau hubungi sekretariat DKM bila Anda kehilangan nomor pengajuan.

@@ -35,8 +35,7 @@
                 <a href="{{ route('galeri.show', $album) }}"
                    class="group overflow-hidden rounded-2xl border border-masjid-100 bg-white shadow-sm transition hover:shadow-md">
                     <div class="overflow-hidden">
-                        <img src="{{ $album->cover_image ? Storage::url($album->cover_image) : ($album->items->first()?->url() ?? asset('images/placeholder.svg')) }}"
-                             alt="" class="h-44 w-full object-cover transition duration-300 group-hover:scale-105">
+                        <x-public.image :src="$album->cover_image ? Storage::url($album->cover_image) : $album->items->first()?->url()" class="h-44 w-full object-cover transition duration-300 group-hover:scale-105" />
                     </div>
                     <div class="p-5">
                         @if ($album->category)

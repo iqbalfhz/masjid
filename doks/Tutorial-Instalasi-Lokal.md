@@ -75,6 +75,9 @@ APP_ENV=local
 APP_URL=http://localhost:8000
 APP_LOCALE=id
 
+# WAJIB: aplikasi memakai jam dinding masjid, bukan UTC.
+APP_TIMEZONE=Asia/Jakarta
+
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -100,6 +103,12 @@ VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:admin@masjidannur.test
 ```
+
+> **Zona waktu itu penting.** Jadwal sholat dari API disimpan sebagai jam lokal
+> (WIB), sedangkan perhitungan "waktu sholat berikutnya" memakai `now()`. Bila
+> `APP_TIMEZONE` dibiarkan `UTC`, keduanya meleset 7 jam dan beranda akan
+> menampilkan waktu sholat yang sudah lewat. Untuk masjid di zona lain, ganti
+> ke `Asia/Makassar` (WITA) atau `Asia/Jayapura` (WIT).
 
 > `PRAYER_API_METHOD=20` adalah metode hisab Kementerian Agama RI. Koordinat dan
 > metode ini juga bisa diubah lewat menu **Pengaturan Umum** di admin panel tanpa
@@ -269,6 +278,7 @@ MySQL development.
 | `Class not found` setelah install paket | `composer dump-autoload` |
 | Menu admin tidak muncul untuk suatu role | `php artisan db:seed --class=RoleSeeder` lalu `php artisan permission:cache-reset` |
 | `masjid:vapid-keys` gagal | PHP tidak menemukan `openssl.cnf`; perintah sudah menyediakan config minimal otomatis di `storage/app/` — pastikan folder tersebut bisa ditulis |
+| Waktu sholat berikutnya meleset beberapa jam | `APP_TIMEZONE` belum diisi. Set `APP_TIMEZONE=Asia/Jakarta` di `.env`, lalu `php artisan config:clear` |
 | Sinkronisasi jadwal sholat gagal | Cek koneksi internet. Jadwal lama tetap dipakai; admin bisa input manual di menu Jadwal Sholat |
 
 ---

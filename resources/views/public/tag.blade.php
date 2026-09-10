@@ -8,7 +8,7 @@
         title="#{{ $tag->name }}"
         subtitle="Semua konten dari berbagai modul yang berkaitan dengan tag ini." />
 
-    <div class="grid gap-8 lg:grid-cols-[3fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <div class="space-y-10">
             @if ($studies->isEmpty() && $events->isEmpty() && $articles->isEmpty() && $albums->isEmpty())
                 <x-public.empty-state message="Belum ada konten dengan tag ini." />
@@ -74,8 +74,7 @@
                     <div class="grid gap-4 sm:grid-cols-3">
                         @foreach ($albums as $album)
                             <a href="{{ route('galeri.show', $album) }}" class="group overflow-hidden rounded-2xl border border-masjid-100 bg-white shadow-sm">
-                                <img src="{{ $album->cover_image ? Storage::url($album->cover_image) : asset('images/placeholder.svg') }}"
-                                     alt="" class="h-32 w-full object-cover transition group-hover:scale-105">
+                                <x-public.image :src="$album->cover_image ? Storage::url($album->cover_image) : null" class="h-32 w-full object-cover transition group-hover:scale-105" />
                                 <div class="p-4">
                                     <h3 class="font-medium text-masjid-900 group-hover:underline">{{ $album->title }}</h3>
                                 </div>

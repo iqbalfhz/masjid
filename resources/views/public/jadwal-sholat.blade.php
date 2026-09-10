@@ -8,7 +8,7 @@
         title="Jadwal Sholat"
         subtitle="Jadwal dihitung otomatis untuk titik koordinat Masjid An-Nur dan diperbarui setiap hari." />
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div>
             <x-public.card class="mb-6">
                 <form method="get" class="flex flex-wrap items-end gap-3">
@@ -73,7 +73,7 @@
 
         <aside class="space-y-6">
             @if ($todaySchedule)
-                <x-public.card class="bg-masjid-800 text-white">
+                <x-public.card tone="dark">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-emas-300">Hari ini</h2>
                     <p class="mt-1 text-sm text-masjid-100">{{ today()->translatedFormat('l, d F Y') }}</p>
 

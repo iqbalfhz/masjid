@@ -8,7 +8,7 @@
         title="Artikel"
         subtitle="Tulisan seputar ilmu Islam dan kabar terbaru dari Masjid An-Nur." />
 
-    <div class="grid gap-8 lg:grid-cols-[3fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <div>
             <x-public.card class="mb-6">
                 <form method="get" class="flex flex-wrap items-end gap-3">
@@ -33,8 +33,7 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     @foreach ($articles as $article)
                         <x-public.card as="article" class="flex flex-col overflow-hidden !p-0">
-                            <img src="{{ $article->cover_image ? Storage::url($article->cover_image) : asset('images/placeholder.svg') }}"
-                                 alt="" class="h-40 w-full object-cover">
+                            <x-public.image :src="$article->cover_image ? Storage::url($article->cover_image) : null" class="h-40 w-full object-cover" />
                             <div class="flex flex-1 flex-col p-5">
                                 <div class="flex flex-wrap items-center gap-2 text-xs text-masjid-500">
                                     @if ($article->category)

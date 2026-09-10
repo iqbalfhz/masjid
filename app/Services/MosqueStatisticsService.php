@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Counter pencapaian untuk beranda (PRD 5.1.16). Angkanya dihitung otomatis
  * dari modul terkait dan di-cache singkat agar beranda tetap ringan.
+ *
+ * Tiap entri membawa nilai mentah (`value`) untuk animasi hitung-naik di sisi
+ * browser, sekaligus `display` yang sudah terformat sebagai tampilan awal —
+ * jadi angkanya tetap benar meski JavaScript tidak jalan.
+ *
+ * @phpstan-type Highlight array{label: string, value: float|int, prefix: string, suffix: string, display: string, caption: string, icon: string}
  */
 class MosqueStatisticsService
 {
@@ -21,7 +27,7 @@ class MosqueStatisticsService
     private const CACHE_TTL_MINUTES = 15;
 
     /**
-     * @return list<array{label: string, value: string, caption: string}>
+     * @return list<Highlight>
      */
     public function highlights(): array
     {
@@ -33,30 +39,41 @@ class MosqueStatisticsService
                 ->where('type', TransactionType::In)
                 ->sum('amount');
 
+            $kajian = Study::query()->where('status', ContentStatus::Disetujui)->count();
+
+            $kegiatan = Event::query()
+                ->where('status', ContentStatus::Disetujui)
+                ->whereDate('event_date', '<', today())
+                ->count();
+
+            $materi = LibraryMaterial::query()->count();
+
             return [
-                [
-                    'label' => 'Infaq & donasi tahun ini',
-                    'value' => 'Rp '.number_format($infaq, 0, ',', '.'),
-                    'caption' => 'Terhimpun sepanjang '.$year,
-                ],
-                [
-                    'label' => 'Kajian rutin',
-                    'value' => (string) Study::query()->where('status', ContentStatus::Disetujui)->count(),
-                    'caption' => 'Majelis ilmu yang berjalan',
-                ],
-                [
-                    'label' => 'Kegiatan terlaksana',
-                    'value' => (string) Event::query()
-                        ->where('status', ContentStatus::Disetujui)
-                        ->whereDate('event_date', '<', today())
-                        ->count(),
-                    'caption' => 'Sejak masjid berdiri',
-                ],
-                [
-                    'label' => 'Materi e-library',
-                    'value' => (string) LibraryMaterial::query()->count(),
-                    'caption' => 'Slide, audio, dan video kajian',
-                ],
+                $this->entry(
+                    label: 'Infaq & donasi tahun ini',
+                    value: $infaq,
+                    caption: 'Terhimpun sepanjang '.$year,
+                    icon: 'banknotes',
+                    prefix: 'Rp ',
+                ),
+                $this->entry(
+                    label: 'Kajian rutin',
+                    value: $kajian,
+                    caption: 'Majelis ilmu yang berjalan',
+                    icon: 'book',
+                ),
+                $this->entry(
+                    label: 'Kegiatan terlaksana',
+                    value: $kegiatan,
+                    caption: 'Sejak masjid berdiri',
+                    icon: 'sparkles',
+                ),
+                $this->entry(
+                    label: 'Materi e-library',
+                    value: $materi,
+                    caption: 'Slide, audio, dan video kajian',
+                    icon: 'folder',
+                ),
             ];
         });
     }
@@ -64,5 +81,21 @@ class MosqueStatisticsService
     public function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
+    }
+
+    /**
+     * @return Highlight
+     */
+    private function entry(string $label, float|int $value, string $caption, string $icon, string $prefix = '', string $suffix = ''): array
+    {
+        return [
+            'label' => $label,
+            'value' => $value,
+            'prefix' => $prefix,
+            'suffix' => $suffix,
+            'display' => $prefix.number_format((float) $value, 0, ',', '.').$suffix,
+            'caption' => $caption,
+            'icon' => $icon,
+        ];
     }
 }

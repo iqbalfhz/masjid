@@ -8,7 +8,7 @@
         title="Donasi & Infaq"
         subtitle="Setiap rupiah yang Anda titipkan dicatat dan dilaporkan terbuka pada halaman Laporan Keuangan." />
 
-    <div class="grid gap-8 lg:grid-cols-[1.2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <h2 class="font-semibold text-masjid-900">Transfer bank</h2>
@@ -48,8 +48,7 @@
                     <p class="mt-1 text-sm text-masjid-600">
                         Buka aplikasi mobile banking atau dompet digital Anda, lalu pindai kode berikut.
                     </p>
-                    <img src="{{ Storage::url($setting->qris_image) }}" alt="Kode QRIS donasi {{ $setting->name }}"
-                         class="mt-4 w-full max-w-xs rounded-xl border border-masjid-100">
+                    <x-public.image :src="Storage::url($setting->qris_image)" :alt="'Kode QRIS donasi '.$setting->name" class="mt-4 w-full max-w-xs rounded-xl border border-masjid-100" />
                 </x-public.card>
             @endif
 
@@ -66,7 +65,7 @@
         </div>
 
         <aside class="space-y-6">
-            <x-public.card class="bg-masjid-800 text-white">
+            <x-public.card tone="dark">
                 <h2 class="text-sm font-semibold uppercase tracking-wide text-emas-300">Terhimpun bulan ini</h2>
                 <p class="mt-2 text-2xl font-semibold">Rp {{ number_format($monthlyIncome, 0, ',', '.') }}</p>
                 <p class="mt-1 text-sm text-masjid-100">Periode {{ today()->translatedFormat('F Y') }}</p>

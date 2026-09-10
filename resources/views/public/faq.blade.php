@@ -48,7 +48,7 @@
         </div>
     @endif
 
-    <x-public.card class="mt-8 bg-masjid-800 text-white">
+    <x-public.card tone="dark" class="mt-8">
         <h2 class="font-semibold">Pertanyaan Anda belum terjawab?</h2>
         <p class="mt-1 text-sm text-masjid-100">
             Kirimkan lewat kotak saran, pengurus akan menindaklanjuti. Anda juga bisa langsung menghubungi sekretariat DKM.

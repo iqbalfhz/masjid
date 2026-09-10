@@ -10,11 +10,10 @@
         <span class="text-masjid-800">{{ $study->theme }}</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             @if ($study->poster_image)
-                <img src="{{ Storage::url($study->poster_image) }}" alt="Poster {{ $study->theme }}"
-                     class="mb-6 w-full rounded-2xl object-cover">
+                <x-public.image :src="Storage::url($study->poster_image)" :alt="'Poster '.$study->theme" class="mb-6 w-full rounded-2xl object-cover" />
             @endif
 
             <h1 class="text-2xl font-semibold text-masjid-900 sm:text-3xl">{{ $study->theme }}</h1>
