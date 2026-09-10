@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * Notifikasi internal admin panel (PRD 5.2.17).
@@ -26,7 +27,7 @@ class AdminNotifier
 
         $this->send(
             $this->approvers(),
-            "{$moduleLabel} menunggu approval",
+            Str::ucfirst($moduleLabel).' menunggu approval',
             "{$author} mengajukan \"{$title}\" untuk ditinjau.",
             'heroicon-o-clock',
             'warning',
@@ -52,7 +53,7 @@ class AdminNotifier
 
         $this->send(
             new Collection([$author]),
-            $approved ? "{$moduleLabel} disetujui" : "{$moduleLabel} ditolak",
+            Str::ucfirst($moduleLabel).($approved ? ' disetujui' : ' ditolak'),
             $body,
             $approved ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle',
             $approved ? 'success' : 'danger',

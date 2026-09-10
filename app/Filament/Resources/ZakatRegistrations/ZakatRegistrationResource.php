@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ZakatRegistrations;
 
 use App\Enums\PaymentStatus;
 use App\Enums\ZakatType;
+use App\Filament\Exports\ZakatRegistrationExporter;
 use App\Filament\Resources\ZakatRegistrations\Pages\CreateZakatRegistration;
 use App\Filament\Resources\ZakatRegistrations\Pages\EditZakatRegistration;
 use App\Filament\Resources\ZakatRegistrations\Pages\ListZakatRegistrations;
@@ -15,6 +16,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -181,7 +184,21 @@ class ZakatRegistrationResource extends Resource
                 EditAction::make(),
                 DeleteAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->label('Export rekap zakat')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->exporter(ZakatRegistrationExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->label('Export yang dipilih')
+                    ->exporter(ZakatRegistrationExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

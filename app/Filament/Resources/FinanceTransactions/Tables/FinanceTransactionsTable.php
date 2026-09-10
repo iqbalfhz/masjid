@@ -3,10 +3,13 @@
 namespace App\Filament\Resources\FinanceTransactions\Tables;
 
 use App\Enums\TransactionType;
+use App\Filament\Exports\FinanceTransactionExporter;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
@@ -85,7 +88,21 @@ class FinanceTransactionsTable
                     ->requiresConfirmation()
                     ->modalDescription('Menghapus transaksi akan mengubah ringkasan bulanan yang tampil publik. Pastikan ini memang koreksi yang disengaja.'),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->label('Export rekap keuangan')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->exporter(FinanceTransactionExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->label('Export yang dipilih')
+                    ->exporter(FinanceTransactionExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

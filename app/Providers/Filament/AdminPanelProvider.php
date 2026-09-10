@@ -39,6 +39,16 @@ class AdminPanelProvider extends PanelProvider
              */
             ->resourceCreatePageRedirect('index')
             ->resourceEditPageRedirect('index')
+            /*
+             * Lonceng notifikasi internal (PRD 5.2.17): tempat approver melihat
+             * konten yang menunggu ditinjau, sekretaris melihat testimoni dan
+             * kotak saran baru, serta bendahara melihat pendaftaran layanan.
+             *
+             * Tanpa ini, notifikasi yang dikirim AdminNotifier hanya tersimpan
+             * di tabel `notifications` tanpa ada yang bisa membacanya.
+             */
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('30s')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

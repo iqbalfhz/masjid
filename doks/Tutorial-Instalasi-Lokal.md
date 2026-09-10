@@ -256,7 +256,27 @@ php artisan queue:listen
 
 ---
 
-## 13. Menjalankan Test
+## 13. Export Rekap
+
+Tiga modul menyediakan tombol export di kanan atas tabelnya:
+
+| Modul | Isi rekap |
+|---|---|
+| Keuangan → Transaksi | Tanggal, kategori, keterangan, pemasukan & pengeluaran terpisah |
+| Layanan Jamaah → Kurban & Aqiqah | Pendaftar, jenis hewan, jumlah, status pembayaran |
+| Layanan Jamaah → Zakat | Muzakki, jenis zakat, jumlah jiwa/nominal, status pembayaran |
+
+Export mengikuti filter yang sedang aktif, jadi bendahara bisa memfilter satu
+bulan lalu mengekspor bulan itu saja. Centang beberapa baris untuk mengekspor
+sebagiannya lewat tombol **Export yang dipilih**.
+
+> Export sengaja dijalankan langsung (`sync`), bukan lewat antrean. Skala data
+> satu masjid kecil, sementara memaksakan antrean berarti berkas tidak pernah
+> jadi bila queue worker kebetulan mati di server.
+
+---
+
+## 14. Menjalankan Test
 
 ```bash
 php artisan test --compact
@@ -267,7 +287,7 @@ MySQL development.
 
 ---
 
-## 14. Troubleshooting Umum
+## 15. Troubleshooting Umum
 
 | Masalah | Penyebab & Solusi |
 |---|---|
@@ -283,7 +303,7 @@ MySQL development.
 
 ---
 
-## 15. Langkah Selanjutnya
+## 16. Langkah Selanjutnya
 
 1. Login sebagai Superadmin, cek menu sudah sesuai matriks role (PRD 5.3).
 2. Isi **Pengaturan Umum**: identitas masjid, rekening donasi, QRIS, koordinat.

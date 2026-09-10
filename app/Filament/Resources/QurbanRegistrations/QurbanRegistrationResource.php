@@ -4,6 +4,7 @@ namespace App\Filament\Resources\QurbanRegistrations;
 
 use App\Enums\PaymentStatus;
 use App\Enums\QurbanServiceType;
+use App\Filament\Exports\QurbanRegistrationExporter;
 use App\Filament\Resources\QurbanRegistrations\Pages\CreateQurbanRegistration;
 use App\Filament\Resources\QurbanRegistrations\Pages\EditQurbanRegistration;
 use App\Filament\Resources\QurbanRegistrations\Pages\ListQurbanRegistrations;
@@ -15,6 +16,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -182,7 +185,21 @@ class QurbanRegistrationResource extends Resource
                 EditAction::make(),
                 DeleteAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->label('Export rekap kurban')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->exporter(QurbanRegistrationExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+            ])
             ->toolbarActions([
+                ExportBulkAction::make()
+                    ->label('Export yang dipilih')
+                    ->exporter(QurbanRegistrationExporter::class)
+                    ->columnMapping(false)
+                    ->enableVisibleTableColumnsByDefault(false),
+
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
