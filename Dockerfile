@@ -24,9 +24,36 @@ COPY resources resources
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# Tahap 2 — dependency PHP
+# Tahap 2 — basis PHP bersama
+#
+# Dependency dipasang memakai PHP yang sama persis dengan yang menjalankan
+# aplikasi nanti. Sebelumnya tahap ini memakai image `composer:2`, dan build
+# gagal: PHP di dalamnya tidak punya ext-intl, sedangkan filament/support
+# mensyaratkannya. Memasang paket dengan PHP yang berbeda dari runtime berarti
+# pemeriksaan platform Composer memeriksa lingkungan yang keliru — entah gagal
+# seperti kemarin, atau lolos padahal runtime-nya tidak memenuhi syarat.
+#
+# Varian Debian, bukan Alpine: itu yang disarankan dokumentasi FrankenPHP, dan
+# ICU untuk ekstensi intl lebih mulus di glibc daripada musl.
 # ---------------------------------------------------------------------------
-FROM composer:2 AS vendor
+FROM dunglas/frankenphp:php8.4-bookworm AS basis
+
+# Ekstensi yang benar-benar dituntut dependency terpasang. `intl` diminta
+# filament/support (tanpa itu composer install pun menolak jalan), `zip` diminta
+# openspout untuk export XLSX sekaligus dipakai Composer membuka paket dist.
+# `opcache` murni performa.
+RUN install-php-extensions \
+        intl \
+        zip \
+        pdo_mysql \
+        opcache
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# ---------------------------------------------------------------------------
+# Tahap 3 — dependency PHP
+# ---------------------------------------------------------------------------
+FROM basis AS vendor
 
 WORKDIR /app
 
@@ -46,26 +73,14 @@ COPY . .
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
 # ---------------------------------------------------------------------------
-# Tahap 3 — runtime
+# Tahap 4 — runtime
 # ---------------------------------------------------------------------------
-FROM dunglas/frankenphp:php8.4-bookworm
+FROM basis
 
 WORKDIR /app
 
-# Varian Debian, bukan Alpine: itu yang disarankan dokumentasi FrankenPHP, dan
-# ICU untuk ekstensi intl lebih mulus di glibc daripada musl.
-
-# Ekstensi yang benar-benar dituntut dependency terpasang. `intl` diminta
-# filament/support (tanpa itu admin panel gagal dimuat sama sekali), `zip` dan
-# `xmlreader` diminta openspout untuk export XLSX. `opcache` murni performa.
-RUN install-php-extensions \
-        intl \
-        zip \
-        pdo_mysql \
-        opcache
-
-# Kode aplikasi lebih dulu, lalu hasil kedua tahap di atas ditimpakan. Urutan
-# ini disengaja: kalau dibalik, vendor dan public/build hanya selamat selama
+# Kode aplikasi lebih dulu, lalu hasil tahap lain ditimpakan. Urutan ini
+# disengaja: kalau dibalik, vendor dan public/build hanya selamat selama
 # keduanya masih tercantum di .dockerignore — ketergantungan tersembunyi yang
 # akan patah tanpa suara begitu berkas itu disunting.
 COPY . .
