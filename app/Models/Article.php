@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Scout\Searchable;
 use Spatie\Tags\HasTags;
 
-#[Fillable(['title', 'slug', 'excerpt', 'content', 'cover_image', 'article_category_id', 'publish_date', 'views', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at'])]
+#[Fillable(['title', 'slug', 'excerpt', 'content', 'cover_image', 'article_category_id', 'publish_date', 'views', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at', 'tags'])]
 class Article extends Model
 {
     use HasApprovalWorkflow, HasFactory, HasSlug, HasTags, RecordsActivity, Searchable, TracksCreator;

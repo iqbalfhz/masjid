@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Tags\HasTags;
 
-#[Fillable(['title', 'slug', 'category', 'event_date', 'description', 'cover_image', 'is_published', 'created_by'])]
+#[Fillable(['title', 'slug', 'category', 'event_date', 'description', 'cover_image', 'is_published', 'created_by', 'tags'])]
 class GalleryAlbum extends Model
 {
     use HasFactory, HasSlug, HasTags, RecordsActivity, TracksCreator;

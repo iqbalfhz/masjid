@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Laravel\Scout\Searchable;
 use Spatie\Tags\HasTags;
 
-#[Fillable(['theme', 'slug', 'ustadz_name', 'schedule_type', 'day_of_week', 'start_date', 'time', 'end_time', 'location', 'description', 'poster_image', 'rsvp_enabled', 'rsvp_quota', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at'])]
+#[Fillable(['theme', 'slug', 'ustadz_name', 'schedule_type', 'day_of_week', 'start_date', 'time', 'end_time', 'location', 'description', 'poster_image', 'rsvp_enabled', 'rsvp_quota', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at', 'tags'])]
 class Study extends Model
 {
     use HasApprovalWorkflow, HasFactory, HasSlug, HasTags, RecordsActivity, Searchable, TracksCreator;

@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Laravel\Scout\Searchable;
 use Spatie\Tags\HasTags;
 
-#[Fillable(['title', 'slug', 'description', 'poster_image', 'event_date', 'start_time', 'end_time', 'location', 'category', 'rsvp_enabled', 'rsvp_quota', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at'])]
+#[Fillable(['title', 'slug', 'description', 'poster_image', 'event_date', 'start_time', 'end_time', 'location', 'category', 'rsvp_enabled', 'rsvp_quota', 'status', 'approval_note', 'created_by', 'reviewed_by', 'reviewed_at', 'tags'])]
 class Event extends Model
 {
     use HasApprovalWorkflow, HasFactory, HasSlug, HasTags, RecordsActivity, Searchable, TracksCreator;
