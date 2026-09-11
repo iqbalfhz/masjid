@@ -5,6 +5,8 @@ namespace App\Filament\Support;
 use App\Enums\ContentStatus;
 use App\Models\User;
 use App\Services\AdminNotifier;
+use App\Support\ApprovableModules;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -17,29 +19,45 @@ use Illuminate\Support\Facades\Auth;
  *
  * Setiap keputusan menulis jejak reviewer ke record, mencatat Log Aktivitas,
  * dan mengirim notifikasi internal ke pihak yang perlu tahu.
+ *
+ * Sebutan modul, kolom judul, dan rute halaman ubah diturunkan dari
+ * ApprovableModules — bukan dioper tiap pemanggil — supaya aksi ini bisa
+ * dipakai apa adanya baik di tabel resource maupun di antrean dashboard, yang
+ * mencampur keempat modul dalam satu tabel.
  */
 class ApprovalActions
 {
     /**
-     * @param  callable(Model): string  $titleResolver
-     * @param  callable(Model): string  $urlResolver
      * @return list<Action>
      */
-    public static function make(string $moduleLabel, callable $titleResolver, callable $urlResolver): array
+    /**
+     * Resolver record opsional.
+     *
+     * Tabel resource menyuntikkan model Eloquent apa adanya, sedangkan antrean
+     * dashboard bekerja dengan record array — satu-satunya bentuk yang boleh
+     * membawa kunci sendiri saat tabel mencampur beberapa model. Dengan resolver
+     * ini definisi aksinya tetap satu, bukan disalin untuk dashboard.
+     *
+     *  list<Action>
+     */
+    public static function make(?Closure $resolveRecord = null): array
     {
         return [
-            static::submit($moduleLabel, $titleResolver, $urlResolver),
-            static::approve($moduleLabel, $titleResolver, $urlResolver),
-            static::reject($moduleLabel, $titleResolver, $urlResolver),
+            static::submit($resolveRecord),
+            static::approve($resolveRecord),
+            static::reject($resolveRecord),
         ];
     }
 
-    /**
-     * @param  callable(Model): string  $titleResolver
-     * @param  callable(Model): string  $urlResolver
-     */
-    public static function submit(string $moduleLabel, callable $titleResolver, callable $urlResolver): Action
+    private static function resolver(?Closure $resolveRecord): Closure
     {
+        return $resolveRecord ?? static fn (mixed $record): Model => $record;
+    }
+
+    public static function submit(?Closure $resolveRecord = null): Action
+    {
+        $toModel = static::resolver($resolveRecord);
+
         return Action::make('submitForApproval')
             ->label('Ajukan Approval')
             ->icon('heroicon-o-paper-airplane')
@@ -47,9 +65,16 @@ class ApprovalActions
             ->requiresConfirmation()
             ->modalHeading('Ajukan konten untuk ditinjau')
             ->modalDescription('Konten akan dikunci dari perubahan dan diteruskan ke Ketua DKM untuk ditinjau.')
-            ->visible(fn (Model $record): bool => in_array($record->status, [ContentStatus::Draft, ContentStatus::Ditolak], true)
-                && Auth::user()?->can('update', $record) === true)
-            ->action(function (Model $record) use ($moduleLabel, $titleResolver, $urlResolver): void {
+            ->visible(function (mixed $record) use ($toModel): bool {
+                $record = $toModel($record);
+
+                return in_array($record->status, [ContentStatus::Draft, ContentStatus::Ditolak], true)
+                    && Auth::user()?->can('update', $record) === true;
+            })
+            ->action(function (mixed $record) use ($toModel): void {
+                $record = $toModel($record);
+                $moduleLabel = ApprovableModules::labelFor($record);
+
                 $record->submitForApproval();
 
                 activity($record->activityLogName())
@@ -61,8 +86,8 @@ class ApprovalActions
                 app(AdminNotifier::class)->contentAwaitingApproval(
                     $record,
                     $moduleLabel,
-                    $titleResolver($record),
-                    $urlResolver($record),
+                    ApprovableModules::titleFor($record),
+                    ApprovableModules::urlFor($record),
                 );
 
                 Notification::make()
@@ -73,12 +98,10 @@ class ApprovalActions
             });
     }
 
-    /**
-     * @param  callable(Model): string  $titleResolver
-     * @param  callable(Model): string  $urlResolver
-     */
-    public static function approve(string $moduleLabel, callable $titleResolver, callable $urlResolver): Action
+    public static function approve(?Closure $resolveRecord = null): Action
     {
+        $toModel = static::resolver($resolveRecord);
+
         return Action::make('approve')
             ->label('Setujui')
             ->icon('heroicon-o-check-circle')
@@ -91,12 +114,18 @@ class ApprovalActions
                     ->label('Catatan (opsional)')
                     ->rows(2),
             ])
-            ->visible(fn (Model $record): bool => $record->status === ContentStatus::MenungguApproval
-                && Auth::user()?->can('approve', $record) === true)
-            ->action(function (Model $record, array $data) use ($moduleLabel, $titleResolver, $urlResolver): void {
+            ->visible(function (mixed $record) use ($toModel): bool {
+                $record = $toModel($record);
+
+                return $record->status === ContentStatus::MenungguApproval
+                    && Auth::user()?->can('approve', $record) === true;
+            })
+            ->action(function (mixed $record, array $data) use ($toModel): void {
+                $record = $toModel($record);
                 /** @var User $reviewer */
                 $reviewer = Auth::user();
                 $note = $data['approval_note'] ?? null;
+                $moduleLabel = ApprovableModules::labelFor($record);
 
                 $record->approveBy($reviewer, $note);
 
@@ -109,8 +138,8 @@ class ApprovalActions
                 app(AdminNotifier::class)->contentReviewed(
                     $record,
                     $moduleLabel,
-                    $titleResolver($record),
-                    $urlResolver($record),
+                    ApprovableModules::titleFor($record),
+                    ApprovableModules::urlFor($record),
                     $reviewer,
                     approved: true,
                     note: $note,
@@ -120,12 +149,10 @@ class ApprovalActions
             });
     }
 
-    /**
-     * @param  callable(Model): string  $titleResolver
-     * @param  callable(Model): string  $urlResolver
-     */
-    public static function reject(string $moduleLabel, callable $titleResolver, callable $urlResolver): Action
+    public static function reject(?Closure $resolveRecord = null): Action
     {
+        $toModel = static::resolver($resolveRecord);
+
         return Action::make('reject')
             ->label('Tolak')
             ->icon('heroicon-o-x-circle')
@@ -138,12 +165,18 @@ class ApprovalActions
                     ->required()
                     ->rows(3),
             ])
-            ->visible(fn (Model $record): bool => $record->status === ContentStatus::MenungguApproval
-                && Auth::user()?->can('approve', $record) === true)
-            ->action(function (Model $record, array $data) use ($moduleLabel, $titleResolver, $urlResolver): void {
+            ->visible(function (mixed $record) use ($toModel): bool {
+                $record = $toModel($record);
+
+                return $record->status === ContentStatus::MenungguApproval
+                    && Auth::user()?->can('approve', $record) === true;
+            })
+            ->action(function (mixed $record, array $data) use ($toModel): void {
+                $record = $toModel($record);
                 /** @var User $reviewer */
                 $reviewer = Auth::user();
                 $note = $data['approval_note'];
+                $moduleLabel = ApprovableModules::labelFor($record);
 
                 $record->rejectBy($reviewer, $note);
 
@@ -156,8 +189,8 @@ class ApprovalActions
                 app(AdminNotifier::class)->contentReviewed(
                     $record,
                     $moduleLabel,
-                    $titleResolver($record),
-                    $urlResolver($record),
+                    ApprovableModules::titleFor($record),
+                    ApprovableModules::urlFor($record),
                     $reviewer,
                     approved: false,
                     note: $note,

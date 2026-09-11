@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Announcements\Tables;
 use App\Enums\AnnouncementPriority;
 use App\Enums\ContentStatus;
 use App\Filament\Support\ApprovalActions;
-use App\Models\Announcement;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -72,11 +71,7 @@ class AnnouncementsTable
                     ->options(AnnouncementPriority::class),
             ])
             ->recordActions([
-                ...ApprovalActions::make(
-                    'pengumuman',
-                    fn (Announcement $record): string => $record->title,
-                    fn (Announcement $record): string => route('filament.admin.resources.announcements.edit', $record),
-                ),
+                ...ApprovalActions::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

@@ -3,7 +3,7 @@
 use App\Enums\UserRole;
 use App\Filament\Exports\FinanceTransactionExporter;
 use App\Filament\Pages\Dashboard;
-use App\Filament\Widgets\ApprovalQueueWidget;
+use App\Filament\Widgets\ActionCenterWidget;
 use App\Filament\Widgets\MosqueOverviewWidget;
 use App\Models\Announcement;
 use App\Models\Facility;
@@ -162,27 +162,28 @@ it('menyediakan halaman profil agar pengurus bisa ganti password sendiri', funct
         ->assertSuccessful();
 });
 
-it('menampilkan hanya widget yang berguna bagi pengurus di dasbor', function (): void {
+it('menampilkan hanya widget yang berguna bagi pengurus di dashboard', function (): void {
     // Kalender punya halaman sendiri, dan info versi framework tidak relevan
     // bagi Tim DKM.
     $widget = collect((new Dashboard)->getWidgets())->map(fn (string $w): string => class_basename($w));
 
     expect($widget)
+        ->toContain('ActionCenterWidget')
         ->toContain('ApprovalQueueWidget')
         ->toContain('MosqueOverviewWidget')
         ->not->toContain('ActivityCalendarWidget')
         ->not->toContain('FilamentInfoWidget');
 });
 
-it('membuka dasbor beserta widget ringkasannya', function (): void {
+it('membuka dashboard beserta widget ringkasannya', function (): void {
     $this->actingAs(userWithRole(UserRole::KetuaDkm))
         ->get('/admin')
         ->assertSuccessful()
-        ->assertSee('Dasbor');
+        ->assertSee('Dashboard');
 
     // Widget dirender sebagai komponen Livewire terpisah yang dimuat lazy,
     // jadi isinya diperiksa langsung ke komponennya.
-    Livewire::test(ApprovalQueueWidget::class)
+    Livewire::test(ActionCenterWidget::class)
         ->assertSuccessful()
         ->assertSee('Menunggu approval');
 

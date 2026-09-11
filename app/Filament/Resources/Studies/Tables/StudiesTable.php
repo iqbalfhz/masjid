@@ -65,11 +65,7 @@ class StudiesTable
                     ->options(ScheduleType::class),
             ])
             ->recordActions([
-                ...ApprovalActions::make(
-                    'kajian',
-                    fn (Study $record): string => $record->theme,
-                    fn (Study $record): string => route('filament.admin.resources.studies.edit', $record),
-                ),
+                ...ApprovalActions::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

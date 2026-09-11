@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Events\Tables;
 
 use App\Enums\ContentStatus;
 use App\Filament\Support\ApprovalActions;
-use App\Models\Event;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -68,11 +67,7 @@ class EventsTable
                     ->query(fn (Builder $query): Builder => $query->whereDate('event_date', '>=', today())),
             ])
             ->recordActions([
-                ...ApprovalActions::make(
-                    'kegiatan',
-                    fn (Event $record): string => $record->title,
-                    fn (Event $record): string => route('filament.admin.resources.events.edit', $record),
-                ),
+                ...ApprovalActions::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])

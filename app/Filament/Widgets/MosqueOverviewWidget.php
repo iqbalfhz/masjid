@@ -14,10 +14,15 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 /**
  * Ringkasan kondisi masjid: keuangan bulan berjalan, kajian aktif, dan waktu
  * sholat berikutnya.
+ *
+ * Singkatan zona waktu diturunkan dari config app.timezone lewat format("T"),
+ * bukan ditulis "WIB" secara tetap. Kodebase ini dipasang ulang per masjid
+ * (PRD bagian 13), dan masjid di Makassar akan melihat jam WITA-nya diberi
+ * label WIB — salah tampil, bukan salah hitung.
  */
 class MosqueOverviewWidget extends StatsOverviewWidget
 {
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 4;
 
     protected ?string $heading = 'Ringkasan Masjid';
 
@@ -41,24 +46,28 @@ class MosqueOverviewWidget extends StatsOverviewWidget
             Stat::make('Pemasukan bulan ini', 'Rp '.number_format((float) $income, 0, ',', '.'))
                 ->description(today()->translatedFormat('F Y'))
                 ->descriptionIcon('heroicon-o-arrow-trending-up')
-                ->color('success'),
+                ->color('success')
+                ->url(route('filament.admin.resources.finance-transactions.index')),
 
             Stat::make('Pengeluaran bulan ini', 'Rp '.number_format((float) $expense, 0, ',', '.'))
                 ->description('Saldo: Rp '.number_format((float) $income - (float) $expense, 0, ',', '.'))
                 ->descriptionIcon('heroicon-o-arrow-trending-down')
-                ->color((float) $income >= (float) $expense ? 'success' : 'danger'),
+                ->color((float) $income >= (float) $expense ? 'success' : 'danger')
+                ->url(route('filament.admin.resources.finance-transactions.index')),
 
             Stat::make('Kajian & kegiatan tayang', $activeStudies)
                 ->description("{$upcomingEvents} kegiatan akan datang")
                 ->descriptionIcon('heroicon-o-book-open')
-                ->color('info'),
+                ->color('info')
+                ->url(route('filament.admin.resources.studies.index')),
 
             Stat::make('Sholat berikutnya', $next === null ? '—' : $next['label'])
                 ->description($next === null
                     ? 'Jadwal belum tersinkron'
-                    : $next['time']->format('H:i').' WIB')
+                    : $next['time']->format('H:i T'))
                 ->descriptionIcon('heroicon-o-clock')
-                ->color('primary'),
+                ->color('primary')
+                ->url(route('filament.admin.resources.prayer-schedules.index')),
         ];
     }
 }

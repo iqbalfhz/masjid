@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Articles\Tables;
 
 use App\Enums\ContentStatus;
 use App\Filament\Support\ApprovalActions;
-use App\Models\Article;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -73,11 +72,7 @@ class ArticlesTable
                     ->preload(),
             ])
             ->recordActions([
-                ...ApprovalActions::make(
-                    'artikel',
-                    fn (Article $record): string => $record->title,
-                    fn (Article $record): string => route('filament.admin.resources.articles.edit', $record),
-                ),
+                ...ApprovalActions::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
