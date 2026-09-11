@@ -1,0 +1,28 @@
+# Dibangun ulang di dalam image
+/node_modules
+/vendor
+/public/build
+
+# Rahasia dan data lokal — jangan pernah ikut ke image
+.env
+.env.*
+!.env.example
+/storage/app/public/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/*.key
+
+# Tidak diperlukan saat runtime
+/.git
+/.github
+/tests
+/doks
+/.ai
+phpunit.xml
+.editorconfig
+.gitattributes
+.gitignore
+README.md
+CLAUDE.md

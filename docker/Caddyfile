@@ -1,0 +1,29 @@
+{
+	# Matikan halaman admin Caddy: tidak dipakai, dan menutupnya mengurangi
+	# permukaan yang terbuka di dalam jaringan container.
+	admin off
+
+	frankenphp
+
+	# `php_server` harus dievaluasi sebelum `file_server` agar permintaan ke
+	# rute Laravel tidak keburu dijawab sebagai berkas statis yang tidak ada.
+	order php_server before file_server
+}
+
+# SERVER_NAME diisi ":80" lewat Dockerfile, sehingga Caddy melayani HTTP biasa
+# tanpa mencoba menerbitkan sertifikat sendiri — TLS adalah urusan proxy Coolify
+# di depannya. Bila image ini dipakai tanpa proxy, isi SERVER_NAME dengan nama
+# domain untuk mengaktifkan HTTPS otomatis.
+{$SERVER_NAME:":80"} {
+	root /app/public
+	encode zstd br gzip
+
+	# Tolak berkas tersembunyi (.env, .git) bila sesuatu terlanjur ikut ke image.
+	@tersembunyi path_regexp /\.(?!well-known)
+	respond @tersembunyi 403
+
+	php_server {
+		# Laravel menaruh seluruh permintaan lewat satu front controller.
+		try_files {path} index.php
+	}
+}
