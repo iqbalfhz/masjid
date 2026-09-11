@@ -30,6 +30,20 @@ chmod -R 775 storage bootstrap/cache
 php artisan storage:link --force
 
 # ---------------------------------------------------------------------------
+# Aset admin panel
+#
+# CSS dan JS Filament tinggal di public/css/filament dan public/js/filament,
+# dan keduanya di-gitignore — jadi tidak pernah ikut ke repo maupun ke build
+# context. Normalnya dibuat ulang oleh `filament:upgrade` lewat composer, tapi
+# itu berjalan di tahap `vendor` dan hasilnya ikut terbuang bersama tahap itu:
+# runtime hanya menyalin /app/vendor, sedangkan asetnya lahir di /app/public.
+#
+# Akibatnya admin panel tampil sebagai HTML tanpa gaya sama sekali — tampak
+# rusak parah padahal aplikasinya sehat.
+# ---------------------------------------------------------------------------
+php artisan filament:assets
+
+# ---------------------------------------------------------------------------
 # Database
 #
 # Migrasi dijalankan otomatis agar redeploy tidak menyisakan skema tertinggal.
