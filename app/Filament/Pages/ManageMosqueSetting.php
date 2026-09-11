@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\MosqueSetting;
 use App\Models\PrayerSchedule;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
@@ -122,9 +123,25 @@ class ManageMosqueSetting extends Page
                                     ->columnSpanFull(),
 
                                 TextInput::make('maps_embed_url')
-                                    ->label('URL embed Google Maps')
+                                    ->label('URL embed Google Maps (opsional)')
                                     ->url()
-                                    ->helperText('Tempel URL dari menu "Sematkan peta" di Google Maps.')
+                                    /*
+                                     * Google menolak link berbagi dimuat di
+                                     * dalam iframe, dan penolakannya tidak
+                                     * bersuara — pengunjung hanya melihat kotak
+                                     * kosong. Kesalahan ini gampang terjadi
+                                     * karena tombol "Bagikan" jauh lebih mudah
+                                     * ditemukan daripada "Sematkan peta", jadi
+                                     * lebih baik ditangkap di sini.
+                                     */
+                                    ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                                        if (blank($value) || MosqueSetting::isEmbeddableMapsUrl($value)) {
+                                            return;
+                                        }
+
+                                        $fail('Ini sepertinya link berbagi, bukan URL sematan. Di Google Maps pilih Bagikan → tab "Sematkan peta" → Salin HTML, lalu tempel bagian di dalam src="..." saja. Boleh juga dikosongkan: peta akan memakai koordinat di tab Jadwal Sholat.');
+                                    })
+                                    ->helperText('Kosongkan saja bila ragu — peta otomatis memakai koordinat masjid. Isi hanya bila ingin tampilan peta yang lebih rapi, dari menu Bagikan → "Sematkan peta".')
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),

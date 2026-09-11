@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-# Sistem Informasi Masjid An-Nur â Tangcity Mall
+# Sistem Informasi Masjid An-Nur — Tangcity Mall
 
 **Versi:** 2.0
 **Tanggal:** 10 September 2026
@@ -20,7 +20,7 @@ Masjid An-Nur berada di lingkungan Tangcity Mall dan melayani jamaah karyawan, p
 
 Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebagai kanal resmi, dan **admin panel** sebagai alat kerja Tim DKM untuk mengelola seluruh konten dan layanan tanpa perlu kemampuan teknis.
 
-**Catatan arsitektur:** Sistem ini dirancang sebagai codebase yang **reusable** â meskipun dibangun pertama kali untuk Masjid An-Nur, struktur modul dan role dibuat cukup generik sehingga bisa di-deploy ulang (instalasi terpisah, bukan multi-tenant) untuk masjid lain di kemudian hari. Karena itu ada pemisahan jelas antara **Superadmin** (pemilik/pengelola teknis sistem, dalam hal ini Iqbal sebagai developer) dengan **Admin** (pengurus tertinggi di tiap masjid yang memakai sistem ini).
+**Catatan arsitektur:** Sistem ini dirancang sebagai codebase yang **reusable** — meskipun dibangun pertama kali untuk Masjid An-Nur, struktur modul dan role dibuat cukup generik sehingga bisa di-deploy ulang (instalasi terpisah, bukan multi-tenant) untuk masjid lain di kemudian hari. Karena itu ada pemisahan jelas antara **Superadmin** (pemilik/pengelola teknis sistem, dalam hal ini Iqbal sebagai developer) dengan **Admin** (pengurus tertinggi di tiap masjid yang memakai sistem ini).
 
 ---
 
@@ -57,7 +57,7 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 - Admin panel (CRUD semua konten & layanan, multi-role)
 - Jadwal sholat otomatis (integrasi API) + reminder push notification
 - Laporan keuangan (input manual oleh bendahara, ditampilkan publik, filterable)
-- Info donasi (tampilan rekening & QRIS statis â tanpa payment gateway)
+- Info donasi (tampilan rekening & QRIS statis — tanpa payment gateway)
 - Manajemen pengumuman, kajian, artikel, galeri, e-library, profil pengurus
 - Interaksi jamaah: testimoni, kotak saran, RSVP kajian
 - Pendaftaran layanan: kurban/aqiqah, zakat, peminjaman fasilitas (pembayaran/konfirmasi tetap manual)
@@ -95,7 +95,7 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 #### 5.1.3 Kajian & Kegiatan
 - Daftar kajian rutin (ustadz, tema, hari/jam, lokasi) dan kalender kegiatan tahunan
 - Detail per kegiatan: deskripsi, poster/flyer, tanggal
-- **RSVP/konfirmasi kehadiran**: jamaah isi form singkat (nama, kontak, jumlah orang) untuk kajian/event tertentu â membantu panitia estimasi konsumsi & tempat
+- **RSVP/konfirmasi kehadiran**: jamaah isi form singkat (nama, kontak, jumlah orang) untuk kajian/event tertentu — membantu panitia estimasi konsumsi & tempat
 
 #### 5.1.4 Laporan Keuangan
 - Tabel laporan bulanan: total pemasukan, pengeluaran, saldo akhir
@@ -144,7 +144,7 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 - Jamaah/pihak eksternal ajukan peminjaman ruang/fasilitas masjid (misal untuk akad nikah, rapat)
 - Form: nama fasilitas, tanggal & jam, keperluan, kontak
 - Menampilkan kalender ketersediaan (agar tidak mengajukan tanggal yang sudah terpakai)
-- Status pengajuan: menunggu â disetujui/ditolak oleh DKM
+- Status pengajuan: menunggu → disetujui/ditolak oleh DKM
 
 #### 5.1.15 FAQ
 - Daftar pertanyaan umum seputar masjid (jam operasional, cara pinjam fasilitas, cara donasi, dll)
@@ -168,10 +168,10 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 
 ### 5.2 Admin Panel (Filament)
 
-**Catatan umum untuk semua modul dengan alur approval** (Pengumuman, Kajian & Kegiatan, Artikel, Peminjaman Fasilitas): setiap record wajib menampilkan riwayat lengkap â siapa yang membuat (created_by), siapa yang meninjau dan mengambil keputusan setuju/tolak (reviewed_by beserta reviewed_at), dan catatan alasan (approval_note) jika ditolak. Ini agar transparan siapa bertanggung jawab atas tiap keputusan, dan mendukung penelusuran lewat Log Aktivitas (5.2.16).
+**Catatan umum untuk semua modul dengan alur approval** (Pengumuman, Kajian & Kegiatan, Artikel, Peminjaman Fasilitas): setiap record wajib menampilkan riwayat lengkap — siapa yang membuat (created_by), siapa yang meninjau dan mengambil keputusan setuju/tolak (reviewed_by beserta reviewed_at), dan catatan alasan (approval_note) jika ditolak. Ini agar transparan siapa bertanggung jawab atas tiap keputusan, dan mendukung penelusuran lewat Log Aktivitas (5.2.16).
 
 #### 5.2.1 Manajemen Pengumuman
-- CRUD pengumuman, alur approval (Sekretaris draft â Ketua DKM setujui/tolak)
+- CRUD pengumuman, alur approval (Sekretaris draft → Ketua DKM setujui/tolak)
 - Hanya yang "Disetujui" tampil di running text beranda
 - Setiap record menampilkan riwayat: **siapa yang membuat** (created_by), **siapa yang menyetujui/menolak** (reviewed_by) beserta waktunya, dan catatan alasan jika ditolak
 
@@ -233,11 +233,26 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 #### 5.2.17 Notifikasi Internal (Admin Panel)
 - Ikon lonceng notifikasi di admin panel untuk semua role, menampilkan daftar notifikasi belum dibaca
 - **Notifikasi ke Approver** (Ketua DKM/Admin): masuk saat ada Pengumuman, Kajian & Kegiatan, Artikel, atau Peminjaman Fasilitas baru berstatus "Menunggu Approval"
-- **Notifikasi ke Pembuat Konten** (Sekretaris): masuk saat draft yang diajukan disetujui atau ditolak â pesan notifikasi menyertakan **nama reviewer** yang mengambil keputusan dan catatan revisi jika ditolak
+- **Notifikasi ke Pembuat Konten** (Sekretaris): masuk saat draft yang diajukan disetujui atau ditolak — pesan notifikasi menyertakan **nama reviewer** yang mengambil keputusan dan catatan revisi jika ditolak
 - **Notifikasi ke Bendahara**: masuk saat ada pendaftaran Kurban/Aqiqah atau Zakat baru yang perlu ditindaklanjuti
 - **Notifikasi ke Sekretaris**: masuk saat ada testimoni baru (perlu moderasi) atau kotak saran/pengaduan baru masuk
 - Klik notifikasi langsung mengarahkan ke halaman/record terkait
 - Fase awal cukup notifikasi in-app (database notification); notifikasi email/WhatsApp menyusul di fase lanjutan (lihat Fase 5)
+
+> **Catatan implementasi — notifikasi dikirim tanpa antrean.**
+> `Filament\Notifications\DatabaseNotification` mengimplementasikan `ShouldQueue`,
+> sehingga `sendToDatabase()` **selalu** melempar notifikasi ke antrean. Di server
+> yang tidak menjalankan `queue:work` — kondisi wajar untuk hosting masjid —
+> notifikasi hanya menumpuk di tabel `jobs` dan lonceng pengurus tidak pernah
+> berisi, tanpa pesan error sama sekali.
+>
+> Menyimpan notifikasi hanyalah satu INSERT, jadi mengantrekannya tidak memberi
+> keuntungan apa pun sementara risikonya notifikasi tak pernah sampai. Karena itu
+> pengirimannya dipaksa langsung lewat `App\Support\ImmediateDatabaseNotification`,
+> dan kini tidak bergantung pada nilai `QUEUE_CONNECTION`. Keputusan yang sama
+> berlaku untuk Export (lihat 5.2.3): dijalankan `sync`.
+>
+> **Konsekuensi deploy: instalasi ini tidak membutuhkan queue worker.**
 
 #### 5.2.18 Pengaturan Umum
 - Info masjid, rekening & QRIS donasi, logo & identitas visual, daftar fasilitas yang bisa dipinjam
@@ -335,14 +350,91 @@ DKM yang akan mengambil tindakan berdasarkan angka itu.
 
 ---
 
+### 5.5 Struktur Navigasi Admin
+
+> **Catatan revisi.** Ditambahkan saat implementasi. Rancangan awal mendaftar
+> modul (bagian 5.2) tanpa menentukan bagaimana modul-modul itu dikelompokkan di
+> menu. Setelah semuanya jadi, hasilnya 25 menu dalam enam kelompok — cukup
+> banyak untuk membuat sidebar lebih panjang daripada layar.
+
+**5.5.1 Pengelompokan.** Urutannya mengikuti seberapa sering dipakai Tim DKM:
+pekerjaan konten harian di atas, urusan administratif di bawah.
+
+| Urutan | Grup | Isi | Jml |
+|---|---|---|---|
+| — | (tanpa grup) | Dashboard | 1 |
+| 1 | Konten & Informasi | Pengumuman, Kajian, Kegiatan, Kalender Kegiatan | 4 |
+| 2 | Media & Pustaka | Artikel, Kategori Artikel, Galeri, E-Library, FAQ | 5 |
+| 3 | Layanan Jamaah | Buku Tamu & Testimoni, Kotak Saran, Kurban & Aqiqah, Zakat, Peminjaman Fasilitas, Daftar Fasilitas | 6 |
+| 4 | Keuangan | Transaksi, Kategori Keuangan | 2 |
+| 5 | Profil Masjid | Pengaturan Umum, Pengurus DKM, Jadwal Sholat | 3 |
+| 6 | Sistem | User, Peran & Hak Akses, Log Aktivitas | 3 |
+
+Tiga keputusan yang mengubah susunan awal:
+
+- **"Media & Pustaka" dipecah dari "Konten & Informasi"**, yang semula menampung
+  9 menu sementara "Keuangan" hanya 2. Pemisahannya mengikuti sifat isinya:
+  konten berbatas waktu (pengumuman, kajian, kegiatan) versus pustaka rujukan
+  (artikel, galeri, e-library, FAQ).
+- **"Pengaturan Umum" dipindah dari Sistem ke Profil Masjid.** Isinya identitas
+  masjid, rekening donasi, dan QRIS — pengurus yang ingin mengganti nomor
+  rekening akan mencarinya di Profil, bukan Sistem.
+- **Grup "Filament Shield" dihapus.** Nama teknis milik plugin, tidak berarti
+  bagi Tim DKM, dan memakan satu baris grup penuh hanya untuk satu menu. Menu
+  Peran dipindah ke Sistem dan dilabeli "Peran & Hak Akses".
+
+**5.5.2 Hanya satu grup terbuka (akordion).** Membuka semua grup sekaligus
+membuat sidebar jauh melampaui tinggi layar, sehingga pengurus harus menggulir
+untuk mencapai menu yang sebenarnya berdekatan. Grup yang memuat halaman sedang
+dibuka selalu ikut terbuka — termasuk saat berpindah halaman — agar pengurus
+tidak kehilangan jejak posisinya.
+
+**5.5.3 Ikon di tingkat grup, bukan di tiap menu.** Filament hanya mengizinkan
+salah satu. Menaruhnya di grup sekaligus mengaktifkan penanda hierarki bawaan
+Filament: menu di dalam grup dirender sebagai titik bertali di bawah ikon
+grupnya, sehingga keanggotaan tiap menu terbaca sekilas.
+
+---
+
 ## 6. Kebutuhan Non-Fungsional
 
 - **Performa:** Halaman publik load < 2 detik (banyak konten statis/cache)
 - **Responsif:** Mobile-first, karena mayoritas jamaah akan akses dari HP
-- **Keamanan:** Autentikasi admin panel, hashing password, rate-limiting login, proteksi spam pada form publik (testimoni, saran, RSVP, pendaftaran) â misal honeypot/captcha sederhana
+- **Keamanan:** Autentikasi admin panel, hashing password, rate-limiting login, proteksi spam pada form publik (testimoni, saran, RSVP, pendaftaran) — misal honeypot/captcha sederhana
 - **Ketersediaan:** Uptime tinggi, hosting sederhana (shared/VPS kecil cukup)
 - **Kemudahan penggunaan:** Admin panel harus bisa dipakai tanpa training teknis (form-based, bukan kode)
 - **Skalabilitas:** Struktur database mendukung penambahan modul di fase berikutnya (misal payment gateway)
+
+### 6.1 Hasil Verifikasi
+
+Dua target di atas sudah diukur, bukan diperkirakan.
+
+**Performa — terpenuhi.** Diukur di lingkungan development dengan data contoh:
+
+| Halaman | Query | Waktu |
+|---|---|---|
+| Beranda | 24 | 326 ms |
+| Kajian | 5 | 33 ms |
+| Laporan keuangan | 12 | 48 ms |
+| Galeri | 6 | 13 ms |
+
+Jauh di bawah target 2 detik, tanpa gejala N+1. Angka ini akan berbeda di server
+produksi, jadi perlu diukur ulang setelah deploy.
+
+**Responsif — terpenuhi setelah perbaikan.** Diuji pada 10 lebar viewport
+(280–1440 px, mencakup layar luar Galaxy Fold sampai desktop) di seluruh 18
+halaman publik: 180 pengukuran, nol overflow horizontal.
+
+Perbaikan yang diperlukan: pola `lg:grid-cols-[minmax(0,…)]` hanya memasang
+`minmax(0,…)` di breakpoint `lg`. Di layar ponsel grid jatuh ke satu kolom
+`auto`, dan kolom `auto` tidak boleh menyusut di bawah min-content isinya —
+sehingga tabel `min-w-160` mengunci seluruh halaman selebar 640 px meski
+tabelnya sendiri sudah dibungkus area gulir. Ditambahkan `grid-cols-1` pada
+19 berkas view; `tests/Feature/ResponsifPublikTest.php` menjaganya.
+
+> Yang diukur adalah **overflow horizontal**. Cacat visual lain (elemen
+> bertumpuk, teks terpotong) tidak tertangkap metode ini dan masih perlu
+> pemeriksaan mata pada perangkat nyata.
 
 ---
 
@@ -364,17 +456,37 @@ DKM yang akan mengambil tindakan berdasarkan angka itu.
 | Kebutuhan | Package | Fungsi |
 |---|---|---|
 | Role & Permission | `spatie/laravel-permission` + `bezhansalleh/filament-shield` | Manajemen role (Superadmin, Admin, Ketua DKM, Sekretaris, Bendahara) dengan UI permission di Filament, auto-generate policy per resource |
-| Log Aktivitas | `spatie/laravel-activitylog` + `z3d0x/filament-logger` | Mencatat & menampilkan audit log (create/update/delete/approve/reject) di admin panel |
-| Upload media (galeri, e-library, poster) | `spatie/laravel-medialibrary` + `filament/spatie-laravel-media-library-plugin` | Kelola upload foto/video/PDF lebih rapi dibanding field upload biasa |
+| Log Aktivitas | `spatie/laravel-activitylog` + ~~`z3d0x/filament-logger`~~ → `ActivityLogResource` buatan sendiri | Mencatat & menampilkan audit log (create/update/delete/approve/reject/login) di admin panel |
+| Upload media (galeri, e-library, poster) | ~~`spatie/laravel-medialibrary`~~ → `FileUpload` bawaan Filament | Kelola upload foto/video/PDF |
 | Rich text editor (artikel, pengumuman) | Bawaan Filament: `Forms\Components\RichEditor` | Cukup pakai built-in; upgrade ke `awcodes/filament-tiptap-editor` hanya jika perlu fitur lebih advanced |
 | Kalender (kajian, kegiatan, cek bentrok peminjaman fasilitas) | `saade/filament-fullcalendar` | Tampilan kalender interaktif untuk overview jadwal & deteksi bentrok booking |
 | Notifikasi internal (in-app) | Bawaan Filament: `Filament\Notifications` (database notifications) | Sudah termasuk di Filament core untuk lonceng notifikasi approval |
-| Export laporan (keuangan, rekap kurban/zakat) | `pxlrbt/filament-excel` | Export data ke Excel/CSV langsung dari tabel Filament |
+| Export laporan (keuangan, rekap kurban/zakat) | ~~`pxlrbt/filament-excel`~~ → `Filament\Actions\Exports` bawaan | Export CSV/XLSX langsung dari tabel Filament |
 | Tag lintas modul | `spatie/laravel-tags` (tanpa plugin Filament resmi, custom field/relation manager) | Data tag polymorphic untuk kajian/artikel/galeri |
 | Dashboard widget (statistik/counter beranda admin) | Bawaan Filament: `StatsOverviewWidget`, `TableWidget`, `ChartWidget` | Cukup built-in, tidak perlu plugin. Susunan lengkapnya di 5.4 |
-| Profile akun user (admin panel) | `jeffgreco13/filament-breezy` | Halaman edit profil, ganti password, avatar per user yang login |
+| Profile akun user (admin panel) | ~~`jeffgreco13/filament-breezy`~~ → `->profile()` bawaan panel | Halaman edit profil, ganti password, avatar per user yang login |
+| Web Push (reminder sholat) | ~~`minishlink/web-push`~~ → `WebPushService` buatan sendiri | VAPID (ES256) diimplementasikan langsung |
 
 *Prinsip: pakai fitur built-in Filament dulu (rich editor, notifikasi, widget stats) sebelum menambah plugin, agar dependency tetap ringan. Push notification (reminder sholat) berjalan di sisi frontend publik (Web Push API), bukan plugin Filament.*
+
+> **Catatan revisi — lima paket batal dipakai.** Baris bercoret di atas adalah
+> rencana awal yang tidak jadi dipasang saat implementasi. Alasannya berbeda-beda,
+> dan semuanya diputuskan saat pengerjaan:
+>
+> | Paket | Alasan batal | Penggantinya |
+> |---|---|---|
+> | `z3d0x/filament-logger` | Hanya mendukung Filament 3, proyek ini Filament 5 | `ActivityLogResource` buatan sendiri, lengkap dengan penerjemah `ActivityLogPresenter` |
+> | `minishlink/web-push` | Menuntut Guzzle 7, bentrok dengan dependency proyek | `WebPushService`: JWT ES256 + konversi tanda tangan DER→raw |
+> | `spatie/laravel-medialibrary` | Berlebihan untuk kebutuhan yang ada | `FileUpload` bawaan Filament |
+> | `pxlrbt/filament-excel` | Filament 5 sudah punya Exporter sendiri | `Filament\Actions\Exports` |
+> | `jeffgreco13/filament-breezy` | Filament 5 sudah punya halaman profil | `->profile()` pada panel |
+>
+> Tiga yang terakhir mengikuti prinsip "built-in dulu" yang ditulis PRD ini
+> sendiri. Dua yang pertama terpaksa, karena paketnya tidak kompatibel.
+>
+> Konsekuensi yang perlu diketahui saat deploy: tidak ada dependency tambahan
+> untuk lima kebutuhan itu, jadi `composer.json` lebih ramping daripada yang
+> dibayangkan rancangan awal.
 
 ---
 
@@ -507,30 +619,30 @@ Untuk keperluan development & testing sebelum data pengurus asli tersedia:
 ## 9. User Flow Utama
 
 **Jamaah mengecek jadwal sholat & kajian:**
-Buka website â Beranda menampilkan jadwal hari ini â klik "Jadwal Lengkap" untuk bulanan â klik "Kajian" untuk lihat jadwal pengajian â opsional isi RSVP jika ingin hadir.
+Buka website → Beranda menampilkan jadwal hari ini → klik "Jadwal Lengkap" untuk bulanan → klik "Kajian" untuk lihat jadwal pengajian → opsional isi RSVP jika ingin hadir.
 
 **Bendahara input laporan keuangan:**
-Login admin panel â Menu Keuangan â Tambah Transaksi â isi tanggal, kategori, jenis, nominal â sistem otomatis update ringkasan bulanan â publik bisa lihat & filter di halaman Laporan Keuangan.
+Login admin panel → Menu Keuangan → Tambah Transaksi → isi tanggal, kategori, jenis, nominal → sistem otomatis update ringkasan bulanan → publik bisa lihat & filter di halaman Laporan Keuangan.
 
 **Sekretaris membuat pengumuman (dengan approval):**
-Login admin panel â Menu Pengumuman â Tambah â isi judul, isi, tanggal tayang â submit sebagai "Menunggu Approval" â Ketua DKM login â tinjau â Setujui (otomatis tayang) atau Tolak (kembali ke Sekretaris beserta catatan revisi).
+Login admin panel → Menu Pengumuman → Tambah → isi judul, isi, tanggal tayang → submit sebagai "Menunggu Approval" → Ketua DKM login → tinjau → Setujui (otomatis tayang) atau Tolak (kembali ke Sekretaris beserta catatan revisi).
 
 **Jamaah mendaftar kurban:**
-Buka halaman Layanan Kurban â isi form (nama, kontak, jenis hewan, jumlah) â submit â dapat nomor pendaftaran â transfer manual ke rekening panitia â konfirmasi ke Bendahara â Bendahara update status "Lunas" di admin panel.
+Buka halaman Layanan Kurban → isi form (nama, kontak, jenis hewan, jumlah) → submit → dapat nomor pendaftaran → transfer manual ke rekening panitia → konfirmasi ke Bendahara → Bendahara update status "Lunas" di admin panel.
 
 **Jamaah mengajukan peminjaman fasilitas:**
-Buka halaman Peminjaman Fasilitas â pilih fasilitas & lihat kalender ketersediaan â isi form tanggal/jam/keperluan â submit â status "Menunggu" â Ketua DKM/Sekretaris review â Setujui/Tolak â jamaah bisa cek status di halaman konfirmasi (via nomor pengajuan).
+Buka halaman Peminjaman Fasilitas → pilih fasilitas & lihat kalender ketersediaan → isi form tanggal/jam/keperluan → submit → status "Menunggu" → Ketua DKM/Sekretaris review → Setujui/Tolak → jamaah bisa cek status di halaman konfirmasi (via nomor pengajuan).
 
 ---
 
 ## 10. Rencana Fase Pengembangan
 
-### Fase 1 â MVP (Prioritas Utama)
+### Fase 1 — MVP (Prioritas Utama)
 - Setup Laravel + Filament, auth & role
 - Modul: Pengaturan umum, Jadwal sholat (API), Pengumuman, Kajian, Log Aktivitas, FAQ
-- **Notifikasi internal (in-app)** untuk alur approval Pengumuman & Kajian â dibangun bareng modul approval, bukan menyusul belakangan
+- **Notifikasi internal (in-app)** untuk alur approval Pengumuman & Kajian — dibangun bareng modul approval, bukan menyusul belakangan
 - Website publik: Beranda, Jadwal Sholat, Kajian, FAQ, Kontak
-- **Dokumentasi instalasi awal (lokal)**: langkah setup environment dev (clone, composer install, migration, seeding) â ditulis paralel sambil setup, bukan di akhir
+- **Dokumentasi instalasi awal (lokal)**: langkah setup environment dev (clone, composer install, migration, seeding) — ditulis paralel sambil setup, bukan di akhir
 
 ### Fase 2
 - Modul Keuangan (input transaksi + laporan publik filterable)
@@ -590,14 +702,14 @@ Buka halaman Peminjaman Fasilitas â pilih fasilitas & lihat kalender keters
 
 **Sudah diputuskan:**
 1. Kategori laporan keuangan bersifat fleksibel (master data, semua jenis) dan wajib bisa difilter multi-dimensi oleh jamaah.
-2. Pengumuman, kajian/kegiatan, dan artikel wajib melalui alur approval (Sekretaris membuat draft â Ketua DKM menyetujui) sebelum tayang publik.
+2. Pengumuman, kajian/kegiatan, dan artikel wajib melalui alur approval (Sekretaris membuat draft → Ketua DKM menyetujui) sebelum tayang publik.
 3. Lokasi masjid cukup dituliskan sebagai "Lantai P3a, Tangcity Mall" tanpa detail petunjuk arah internal.
-4. Daftar user admin awal menggunakan data dummy (akan diganti data pengurus asli belakangan), minimal ada 1 akun superadmin â lihat tabel dummy user di bagian 8.1.
+4. Daftar user admin awal menggunakan data dummy (akan diganti data pengurus asli belakangan), minimal ada 1 akun superadmin — lihat tabel dummy user di bagian 8.1.
 5. Seluruh modul tambahan (buku tamu, RSVP, kotak saran, kurban, zakat, peminjaman fasilitas, e-library, FAQ, statistik, pencarian global, tag, push notification) disetujui untuk masuk scope, dikembangkan bertahap sesuai fase di bagian 10.
-6. Sistem dirancang **reusable** (bukan multi-tenant) â tiap masjid yang memakai sistem ini punya instalasi/database terpisah, di-deploy ulang dari codebase yang sama.
+6. Sistem dirancang **reusable** (bukan multi-tenant) — tiap masjid yang memakai sistem ini punya instalasi/database terpisah, di-deploy ulang dari codebase yang sama.
 7. Ditambahkan role **Admin (Pengurus Masjid)** di atas Ketua DKM: Superadmin (Iqbal, developer) punya akses penuh termasuk pengaturan teknis sistem; Admin punya akses penuh ke seluruh modul operasional masjid tapi tanpa akses konfigurasi level sistem.
 8. Dokumentasi instalasi (lokal untuk development di Fase 1, dan production/deploy di Fase 4) menjadi deliverable wajib, ditulis paralel selama pengembangan agar mendukung tujuan reusable codebase.
-9. Ditambahkan modul **Notifikasi Internal (in-app)** untuk semua alur approval dan interaksi jamaah (moderasi testimoni, kotak saran, pendaftaran kurban/zakat, peminjaman fasilitas) â dibangun bertahap mengikuti fase modul terkait, dimulai dari Fase 1. Notifikasi email/WhatsApp otomatis tetap di Fase 5 (di luar scope awal).
+9. Ditambahkan modul **Notifikasi Internal (in-app)** untuk semua alur approval dan interaksi jamaah (moderasi testimoni, kotak saran, pendaftaran kurban/zakat, peminjaman fasilitas) — dibangun bertahap mengikuti fase modul terkait, dimulai dari Fase 1. Notifikasi email/WhatsApp otomatis tetap di Fase 5 (di luar scope awal).
 
 ---
 
