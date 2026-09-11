@@ -8,7 +8,7 @@
         title="Cek Status Peminjaman"
         subtitle="Masukkan nomor pengajuan yang Anda terima saat mengirim formulir." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <form method="get" class="flex flex-wrap items-end gap-3">

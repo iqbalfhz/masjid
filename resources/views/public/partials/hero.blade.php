@@ -6,7 +6,7 @@
     <div class="animate-float pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-emas-400/20 blur-3xl" aria-hidden="true"></div>
     <div class="animate-float pointer-events-none absolute -bottom-28 -left-16 h-64 w-64 rounded-full bg-masjid-400/20 blur-3xl [animation-delay:2.5s]" aria-hidden="true"></div>
 
-    <div class="relative grid gap-10 lg:grid-cols-[1.05fr_1fr] lg:items-center">
+    <div class="relative grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center">
         <div data-reveal>
             <span class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-medium text-emas-100 backdrop-blur-sm">
                 <x-public.icon name="building" class="h-3.5 w-3.5" />

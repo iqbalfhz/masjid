@@ -30,7 +30,7 @@
         </dl>
     </section>
 
-    <div class="mt-16 grid gap-12 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="mt-16 grid gap-12 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div class="space-y-14">
             {{-- Kajian rutin --}}
             <section data-reveal aria-labelledby="judul-kajian">

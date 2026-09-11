@@ -10,7 +10,7 @@
         <span class="text-masjid-800">{{ Str::limit($article->title, 60) }}</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             @if ($article->cover_image)
                 <x-public.image :src="Storage::url($article->cover_image)" class="mb-6 w-full rounded-2xl object-cover" />

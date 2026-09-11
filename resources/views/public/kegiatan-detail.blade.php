@@ -10,7 +10,7 @@
         <span class="text-masjid-800">{{ $event->title }}</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             @if ($event->poster_image)
                 <x-public.image :src="Storage::url($event->poster_image)" :alt="'Poster '.$event->title" class="mb-6 w-full rounded-2xl object-cover" />

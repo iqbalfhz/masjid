@@ -10,7 +10,7 @@
         <span class="text-masjid-800">Pengumuman</span>
     </nav>
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <article>
             <div class="flex flex-wrap items-center gap-3 text-sm text-masjid-500">
                 <x-public.badge :color="$announcement->priority === \App\Enums\AnnouncementPriority::Tinggi ? 'emas' : 'gray'">

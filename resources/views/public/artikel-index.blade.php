@@ -8,7 +8,7 @@
         title="Artikel"
         subtitle="Tulisan seputar ilmu Islam dan kabar terbaru dari Masjid An-Nur." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <div>
             <x-public.card class="mb-6">
                 <form method="get" class="flex flex-wrap items-end gap-3">

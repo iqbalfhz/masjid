@@ -8,7 +8,7 @@
         title="Profil Masjid"
         :subtitle="$setting->tagline" />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             @if ($setting->history)
                 <x-public.card>

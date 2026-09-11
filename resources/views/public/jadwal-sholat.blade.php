@@ -8,7 +8,7 @@
         title="Jadwal Sholat"
         subtitle="Jadwal dihitung otomatis untuk titik koordinat Masjid An-Nur dan diperbarui setiap hari." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div>
             <x-public.card class="mb-6">
                 <form method="get" class="flex flex-wrap items-end gap-3">

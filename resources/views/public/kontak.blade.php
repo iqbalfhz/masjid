@@ -8,7 +8,7 @@
         title="Kontak & Lokasi"
         subtitle="Kami berada di dalam area Tangcity Mall dan terbuka untuk seluruh jamaah." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <h2 class="font-semibold text-masjid-900">Alamat</h2>

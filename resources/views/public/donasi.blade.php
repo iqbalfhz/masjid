@@ -8,7 +8,7 @@
         title="Donasi & Infaq"
         subtitle="Setiap rupiah yang Anda titipkan dicatat dan dilaporkan terbuka pada halaman Laporan Keuangan." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <div class="space-y-6">
             <x-public.card>
                 <h2 class="font-semibold text-masjid-900">Transfer bank</h2>

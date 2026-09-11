@@ -8,7 +8,7 @@
         title="#{{ $tag->name }}"
         subtitle="Semua konten dari berbagai modul yang berkaitan dengan tag ini." />
 
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+    <div class="grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <div class="space-y-10">
             @if ($studies->isEmpty() && $events->isEmpty() && $articles->isEmpty() && $albums->isEmpty())
                 <x-public.empty-state message="Belum ada konten dengan tag ini." />
