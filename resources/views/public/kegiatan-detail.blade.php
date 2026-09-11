@@ -37,7 +37,11 @@
             </dl>
 
             @if ($event->description)
-                <div class="prose-masjid mt-8 text-masjid-800">{!! $event->description !!}</div>
+                {{-- Deskripsi kegiatan diisi lewat Textarea, bukan RichEditor, jadi
+                     isinya teks biasa dan harus di-escape lebih dulu. Merendernya
+                     mentah membuat apa pun yang diketik tersimpan sebagai HTML
+                     aktif di halaman publik. --}}
+                <div class="prose-masjid mt-8 text-masjid-800">{!! nl2br(e($event->description)) !!}</div>
             @endif
 
             @if ($event->tags->isNotEmpty())
