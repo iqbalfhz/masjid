@@ -3,14 +3,17 @@
 namespace App\Providers;
 
 use App\Enums\UserRole;
+use App\Listeners\RefreshNavigationBadges;
 use App\Models\User;
 use App\Policies\ActivityPolicy;
 use App\View\Composers\PublicLayoutComposer;
 use Carbon\CarbonImmutable;
+use Filament\Actions\Events\ActionCalled;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
@@ -45,6 +48,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Activity::class, ActivityPolicy::class);
 
         View::composer(['layouts.public', 'public.*'], PublicLayoutComposer::class);
+
+        /**
+         * Badge navigasi hidup di komponen Livewire sidebar yang terpisah dari
+         * komponen halaman, jadi aksi tabel tidak ikut menyegarkannya.
+         *
+         * Didaftarkan manual karena Filament mengirim nama event dengan Action
+         * sebagai payload, sehingga penemuan otomatis Laravel salah menyimpulkan
+         * nama event-nya dari type-hint listener.
+         */
+        Event::listen(ActionCalled::class, RefreshNavigationBadges::class);
 
         $this->configureRateLimiting();
     }

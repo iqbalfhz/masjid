@@ -2,8 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Enums\BookingStatus;
 use App\Enums\ContentStatus;
+use App\Enums\ModerationStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\ScheduleType;
+use App\Enums\SuggestionStatus;
 use App\Enums\TransactionType;
 use App\Enums\UserRole;
 use App\Models\Announcement;
@@ -25,6 +29,7 @@ use App\Models\Suggestion;
 use App\Models\Testimonial;
 use App\Models\User;
 use App\Models\ZakatRegistration;
+use App\Services\AdminNotifier;
 use Illuminate\Database\Seeder;
 
 /**
@@ -49,6 +54,89 @@ class DemoContentSeeder extends Seeder
         $this->seedLibrary($sekretaris);
         $this->seedBoardMembers();
         $this->seedJamaahInteractions($ketua);
+        $this->seedNotifications();
+    }
+
+    /**
+     * Isi lonceng notifikasi agar keadaan demo utuh.
+     *
+     * Notifikasi asli hanya terkirim lewat form publik dan tombol "Ajukan
+     * Approval". Konten di sini dibuat langsung lewat factory, jadi tanpa
+     * langkah ini lonceng selalu kosong padahal antrean pekerjaannya menumpuk —
+     * membuat fitur notifikasi terlihat rusak saat dicoba.
+     */
+    private function seedNotifications(): void
+    {
+        $notifier = app(AdminNotifier::class);
+
+        foreach (Announcement::query()->awaitingApproval()->get() as $announcement) {
+            $notifier->contentAwaitingApproval(
+                $announcement,
+                'pengumuman',
+                $announcement->title,
+                route('filament.admin.resources.announcements.edit', $announcement),
+            );
+        }
+
+        foreach (Study::query()->awaitingApproval()->get() as $study) {
+            $notifier->contentAwaitingApproval(
+                $study,
+                'kajian',
+                $study->theme,
+                route('filament.admin.resources.studies.edit', $study),
+            );
+        }
+
+        foreach (Article::query()->awaitingApproval()->get() as $article) {
+            $notifier->contentAwaitingApproval(
+                $article,
+                'artikel',
+                $article->title,
+                route('filament.admin.resources.articles.edit', $article),
+            );
+        }
+
+        foreach (Testimonial::query()->where('status', ModerationStatus::Menunggu)->get() as $testimonial) {
+            $notifier->newJamaahInput(
+                'Testimoni baru menunggu moderasi',
+                str($testimonial->message)->limit(120)->value(),
+                route('filament.admin.resources.testimonials.index'),
+            );
+        }
+
+        foreach (Suggestion::query()->where('status', SuggestionStatus::Baru)->get() as $suggestion) {
+            $notifier->newJamaahInput(
+                'Masukan baru dari jamaah',
+                "[{$suggestion->category->getLabel()}] ".str($suggestion->message)->limit(120)->value(),
+                route('filament.admin.resources.suggestions.index'),
+            );
+        }
+
+        foreach (QurbanRegistration::query()->where('payment_status', PaymentStatus::BelumBayar)->get() as $registration) {
+            $notifier->newRegistration(
+                'kurban & aqiqah',
+                'Pendaftaran kurban baru',
+                "{$registration->name} mendaftar {$registration->quantity} {$registration->animalLabel()} ({$registration->registration_number}).",
+                route('filament.admin.resources.qurban-registrations.index'),
+            );
+        }
+
+        foreach (ZakatRegistration::query()->where('payment_status', PaymentStatus::BelumBayar)->get() as $registration) {
+            $notifier->newRegistration(
+                'zakat',
+                'Pendaftaran zakat baru',
+                "{$registration->name} mendaftar {$registration->zakat_type->getLabel()} ({$registration->registration_number}).",
+                route('filament.admin.resources.zakat-registrations.index'),
+            );
+        }
+
+        foreach (FacilityBooking::query()->where('status', BookingStatus::Menunggu)->with('facility')->get() as $booking) {
+            $notifier->newFacilityBooking(
+                'Pengajuan peminjaman fasilitas baru',
+                "{$booking->name} mengajukan {$booking->facility->name} pada {$booking->booking_date->translatedFormat('d F Y')} ({$booking->booking_number}).",
+                route('filament.admin.resources.facility-bookings.index'),
+            );
+        }
     }
 
     private function seedAnnouncements(User $author, User $reviewer): void

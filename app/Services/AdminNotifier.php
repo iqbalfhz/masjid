@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Support\ImmediateDatabaseNotification;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Collection;
@@ -127,6 +128,30 @@ class AdminNotifier
     }
 
     /**
+     * Buang skema dan host dari URL tujuan.
+     *
+     * Notifikasi tersimpan permanen di basis data, sementara alamat absolut
+     * hanya benar selama origin-nya tidak berubah. URL yang dibekukan saat
+     * seeder berjalan lewat CLI memakai APP_URL, dan begitu pengurus membuka
+     * panel dari host atau port lain tautannya mati.
+     *
+     * Jalur relatif selalu diselesaikan terhadap origin yang sedang dibuka,
+     * jadi tautannya tetap hidup di mana pun aplikasi dipasang.
+     */
+    private function relativeUrl(string $url): string
+    {
+        $bagian = parse_url($url);
+
+        if ($bagian === false) {
+            return $url;
+        }
+
+        return ($bagian['path'] ?? '/')
+            .(isset($bagian['query']) ? '?'.$bagian['query'] : '')
+            .(isset($bagian['fragment']) ? '#'.$bagian['fragment'] : '');
+    }
+
+    /**
      * @param  Collection<int, User>  $recipients
      */
     private function send(Collection $recipients, string $title, string $body, string $icon, string $color, string $url): void
@@ -135,7 +160,7 @@ class AdminNotifier
             return;
         }
 
-        Notification::make()
+        $notification = Notification::make()
             ->title($title)
             ->body($body)
             ->icon($icon)
@@ -143,9 +168,12 @@ class AdminNotifier
             ->actions([
                 Action::make('lihat')
                     ->label('Lihat detail')
-                    ->url($url)
+                    ->url($this->relativeUrl($url))
                     ->markAsRead(),
-            ])
-            ->sendToDatabase($recipients);
+            ]);
+
+        // Sengaja tidak lewat `sendToDatabase()`: metode itu mengantrekan notifikasi
+        // ke queue, dan tanpa worker berjalan lonceng pengurus tak pernah terisi.
+        ImmediateDatabaseNotification::deliver($notification, $recipients);
     }
 }
