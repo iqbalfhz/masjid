@@ -48,15 +48,6 @@ RUN install-php-extensions \
         pdo_mysql \
         opcache
 
-# `curl` dipasang eksplisit karena healthcheck Coolify menjalankannya di dalam
-# container. Tanpa curl, perintahnya gagal, container ditandai `unhealthy`, dan
-# Traefik menolak merutekan ke sana — pengunjung hanya melihat 502 meski
-# aplikasinya sendiri sehat. Kegagalan ini menyesatkan: log aplikasi bersih,
-# karena permintaannya tak pernah sampai.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # ---------------------------------------------------------------------------
