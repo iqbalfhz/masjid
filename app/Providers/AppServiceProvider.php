@@ -24,7 +24,18 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(PublicLayoutComposer::class);
+        /**
+         * `scoped`, bukan `singleton`.
+         *
+         * Composer ini memoize hasil query sekaligus penanda menu aktif, dan
+         * penanda itu berasal dari request yang sedang berjalan. Di mode klasik
+         * keduanya setara karena container dibangun ulang tiap request, tapi di
+         * worker mode (FrankenPHP/Octane) aplikasi bertahan di memori: binding
+         * `singleton` akan menyajikan menu yang tersorot mengikuti halaman
+         * pengunjung pertama, dan pengaturan masjid yang membeku sampai worker
+         * di-restart. Binding `scoped` dibuang di antara request.
+         */
+        $this->app->scoped(PublicLayoutComposer::class);
     }
 
     public function boot(): void
