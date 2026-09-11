@@ -30,7 +30,7 @@
                     <input type="hidden" name="arsip" value="1">
                 @endif
                 <label for="kategori" class="text-sm font-medium text-masjid-800">Kategori</label>
-                <select id="kategori" name="kategori" onchange="this.form.submit()"
+                <select id="kategori" name="kategori" data-auto-submit
                         class="rounded-lg border border-masjid-200 px-3 py-1.5 text-sm shadow-sm focus:ring-2 focus:ring-masjid-400">
                     <option value="">Semua</option>
                     @foreach ($categories as $category)

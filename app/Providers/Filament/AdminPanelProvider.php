@@ -118,8 +118,11 @@ class AdminPanelProvider extends PanelProvider
                  * dipasang di bootstrap/app.php tidak sampai ke sini. Tanpa
                  * baris ini admin panel tetap tanpa perlindungan clickjacking —
                  * justru di bagian yang memegang seluruh data masjid.
+                 *
+                 * Parameter `admin` memilih CSP yang dilonggarkan untuk Alpine
+                 * dan Livewire; halaman publik tetap memakai kebijakan ketat.
                  */
-                SecurityHeaders::class,
+                SecurityHeaders::class.':admin',
             ])
             ->plugins([
                 /*

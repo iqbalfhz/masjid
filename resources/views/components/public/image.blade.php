@@ -5,6 +5,10 @@
      * Gambar dengan cadangan: berkas yang hilang otomatis diganti placeholder
      * supaya tata letak tidak rusak.
      *
+     * Penggantiannya dikerjakan resources/js/app.js lewat data-fallback, bukan
+     * atribut onerror. CSP halaman publik memblokir event handler inline, dan
+     * gambar yang gagal dimuat akan dibiarkan kosong tanpa pesan apa pun.
+     *
      * Kelas dari pemanggil MENGGANTI bawaan, bukan digabung. Tailwind memilih
      * pemenang berdasarkan urutan di stylesheet, bukan urutan penulisan di
      * atribut — menggabungkan `h-full w-full` bawaan dengan `h-24 w-24` dari
@@ -21,5 +25,5 @@
     loading="lazy"
     decoding="async"
     class="{{ $classes }}"
-    onerror="this.onerror=null;this.src='{{ $fallback }}'"
+    data-fallback="{{ $fallback }}"
 >

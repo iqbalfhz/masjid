@@ -69,4 +69,26 @@ return [
         'rate_limit' => env('PUBLIC_FORM_RATE_LIMIT', '5,1'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Content Security Policy
+    |--------------------------------------------------------------------------
+    |
+    | Bila true, kebijakan dikirim sebagai Content-Security-Policy-Report-Only:
+    | pelanggaran dicatat di konsol browser tapi tidak diblokir.
+    |
+    | Bawaannya aktif hanya di lokal. Server pengembangan Vite (npm run dev)
+    | melayani skrip dari origin lain, dan kebijakan publik yang ketat akan
+    | memblokirnya — tampilan lokal patah tanpa sebab yang jelas.
+    |
+    | Di produksi ini juga sakelar darurat: bila CSP ternyata mematahkan
+    | sesuatu, isi CSP_REPORT_ONLY=true di Coolify lalu Restart — tanpa
+    | mengubah kode.
+    |
+    */
+
+    'csp' => [
+        'report_only' => (bool) env('CSP_REPORT_ONLY', env('APP_ENV', 'production') === 'local'),
+    ],
+
 ];

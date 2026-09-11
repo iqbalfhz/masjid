@@ -400,7 +400,7 @@ grupnya, sehingga keanggotaan tiap menu terbaca sekilas.
 
 - **Performa:** Halaman publik load < 2 detik (banyak konten statis/cache)
 - **Responsif:** Mobile-first, karena mayoritas jamaah akan akses dari HP
-- **Keamanan:** Autentikasi admin panel, hashing password, rate-limiting login, proteksi spam pada form publik (testimoni, saran, RSVP, pendaftaran) — misal honeypot/captcha sederhana
+- **Keamanan:** Autentikasi admin panel, hashing password, rate-limiting login, proteksi spam pada form publik (testimoni, saran, RSVP, pendaftaran) — misal honeypot/captcha sederhana. Lapisan tambahan hasil audit (header keamanan, Content-Security-Policy, dan lainnya) dicatat di 6.2
 - **Ketersediaan:** Uptime tinggi, hosting sederhana (shared/VPS kecil cukup)
 - **Kemudahan penggunaan:** Admin panel harus bisa dipakai tanpa training teknis (form-based, bukan kode)
 - **Skalabilitas:** Struktur database mendukung penambahan modul di fase berikutnya (misal payment gateway)
@@ -435,6 +435,68 @@ tabelnya sendiri sudah dibungkus area gulir. Ditambahkan `grid-cols-1` pada
 > Yang diukur adalah **overflow horizontal**. Cacat visual lain (elemen
 > bertumpuk, teks terpotong) tidak tertangkap metode ini dan masih perlu
 > pemeriksaan mata pada perangkat nyata.
+
+### 6.2 Keamanan — Hasil Audit
+
+Poin **Keamanan** di atas hanya menyebut autentikasi, hashing, rate limiting, dan
+proteksi spam. Setelah deploy pertama, pemindaian securityheaders.com memberi
+nilai **F**, dan audit menyeluruh yang menyusul menambahkan lapisan berikut.
+Semuanya improvisasi di luar rancangan awal.
+
+**Header keamanan** — `app/Http/Middleware/SecurityHeaders.php`, dipasang di grup
+`web` dan di tumpukan middleware panel Filament (yang tidak memakai grup `web`):
+
+| Header | Nilai | Menutup |
+|---|---|---|
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains`, hanya lewat HTTPS | Penurunan paksa ke HTTP |
+| `X-Frame-Options` | `SAMEORIGIN` | Clickjacking lewat iframe |
+| `X-Content-Type-Options` | `nosniff` | Berkas unggahan ditafsirkan sebagai skrip |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Alamat halaman bocor ke situs luar |
+| `Permissions-Policy` | kamera, mikrofon, lokasi, pembayaran, USB dimatikan | Penyalahgunaan fitur browser |
+| `Content-Security-Policy` | lihat di bawah | Eksekusi skrip sisipan |
+
+**Content-Security-Policy dibelah dua:**
+
+- *Halaman publik — ketat.* `script-src 'self'` tanpa `'unsafe-inline'`. Artikel,
+  pengumuman, dan FAQ memakai RichEditor dan dirender sebagai HTML mentah;
+  dengan kebijakan ini `<script>` yang disisipkan lewat konten diblokir browser.
+  Peta di halaman kontak diizinkan lewat `frame-src` untuk `maps.google.com` dan
+  `www.google.com` — yang pertama mengalihkan ke yang kedua.
+- *Admin panel — dilonggarkan.* `'unsafe-inline' 'unsafe-eval'`, karena Alpine.js
+  dan Livewire membutuhkannya. Admin berada di balik login, sehingga paparannya
+  jauh lebih kecil.
+
+Konsekuensinya, view publik tidak boleh memuat skrip inline maupun atribut
+`on…=`. Dua yang sempat ada — `onchange` pada filter kategori kegiatan dan
+`onerror` pada gambar cadangan — dipindah ke `resources/js/app.js`. Tanpa
+pemindahan itu, filter kategori tidak akan bereaksi sama sekali di produksi.
+`tests/Feature/ContentSecurityPolicyTest.php` menjaga kedua larangan tersebut.
+
+**Sakelar darurat `CSP_REPORT_ONLY`.** Bila `true`, pelanggaran hanya dicatat di
+konsol browser, tidak diblokir. Bawaannya `true` di lokal — server Vite
+(`npm run dev`) berjalan di origin lain — dan `false` di tempat lain. Bila CSP
+ternyata mematahkan sesuatu di produksi, isi `CSP_REPORT_ONLY=true` di
+environment server lalu restart, tanpa mengubah kode.
+
+**Temuan lain dari audit yang sama:**
+
+| Temuan | Dampak | Perbaikan |
+|---|---|---|
+| Deskripsi kegiatan dirender tanpa escape (`{!! nl2br(...) !!}`) | Stored XSS: skrip yang ditulis lewat form admin tereksekusi di halaman publik | `nl2br(e(...))`; `EscapingKontenTest` |
+| Aplikasi di belakang proxy (Cloudflare Tunnel) tidak mengenali HTTPS | HSTS tidak terkirim; tautan yang dibangun dari request memakai `http://` | `trustProxies` di `bootstrap/app.php`, env `TRUSTED_PROXIES`; `DiBelakangProxyTest` |
+| `tags` tidak ada di `$fillable` Article, Event, GalleryAlbum, Study | Di produksi tag hilang diam-diam; di lokal menyimpan galeri berakhir `MassAssignmentException` | Ditambahkan ke `#[Fillable]`; `TagLintasModulTest` |
+| Kolom Role di Manajemen User tanpa eager load | N+1 query di produksi; error 500 di lokal begitu ada lebih dari satu akun | `modifyQueryUsing(... with('roles'))`; `AdminPanelAccessTest` |
+| `composer audit` dan `npm audit` | Nol kerentanan diketahui | — |
+
+**Diverifikasi di browser sungguhan**, bukan hanya lewat test: Chromium headless
+dengan CSP ditegakkan, 22 halaman publik dan 43 halaman admin (termasuk login,
+RichEditor, unggah berkas, kalender, dan grafik dashboard). Kontrol positif:
+skrip inline yang disisipkan ke halaman publik terbukti diblokir, sedangkan di
+admin tetap berjalan.
+
+**Belum dikerjakan:** avatar bawaan Filament diambil dari `ui-avatars.com`,
+sehingga nama pengurus terkirim ke layanan pihak ketiga. Bisa diganti avatar
+lokal bila dianggap perlu.
 
 ---
 

@@ -89,30 +89,3 @@
         </aside>
     </div>
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('click', async (event) => {
-            const tombol = event.target.closest('[data-copy-target]');
-
-            if (!tombol) {
-                return;
-            }
-
-            const sumber = document.getElementById(tombol.dataset.copyTarget);
-
-            if (!sumber) {
-                return;
-            }
-
-            try {
-                await navigator.clipboard.writeText(sumber.textContent.trim());
-                const teksAsli = tombol.textContent;
-                tombol.textContent = 'Tersalin!';
-                setTimeout(() => (tombol.textContent = teksAsli), 2000);
-            } catch (error) {
-                console.error(error);
-            }
-        });
-    </script>
-@endpush

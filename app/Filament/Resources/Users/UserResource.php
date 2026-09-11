@@ -124,6 +124,13 @@ class UserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            /*
+             * Kolom Role dan pengecekan canManage() di aksi tiap baris sama-sama
+             * membaca relasi roles. Tanpa eager load, tiap baris menambah query
+             * sendiri — dan di lokal, tempat lazy loading dilarang, halaman ini
+             * langsung error 500 begitu ada lebih dari satu pengguna.
+             */
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('roles'))
             ->columns([
                 ImageColumn::make('avatar_path')
                     ->label('Foto')

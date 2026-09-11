@@ -122,6 +122,16 @@ VAPID_SUBJECT=mailto:admin@masjidannur.test
 > metode ini juga bisa diubah lewat menu **Pengaturan Umum** di admin panel tanpa
 > menyentuh `.env`.
 
+> **Di lokal, Content-Security-Policy hanya mencatat, tidak memblokir.** Server
+> Vite (`npm run dev`) melayani skrip dari origin lain, dan kebijakan publik yang
+> ketat akan memblokirnya. Karena itu `CSP_REPORT_ONLY` bawaannya `true` bila
+> `APP_ENV=local`. Pesan `[Report Only] … violates the following Content Security
+> Policy` di konsol browser adalah peringatan dini: kode itu **akan diblokir di
+> produksi**. Laporan untuk skrip `browser-logger-active` berasal dari Laravel
+> Boost, yang hanya ada di lokal, dan boleh diabaikan. Untuk menguji persis
+> seperti produksi: `npm run build`, isi `CSP_REPORT_ONLY=false`, lalu
+> `php artisan config:clear`. Aturan lengkapnya ada di PRD bagian 6.2.
+
 ---
 
 ## 5. Buat Database
@@ -368,6 +378,8 @@ MySQL development.
 | Klik "Lihat detail" di notifikasi malah error / tidak bisa diakses | `APP_URL` tidak sama dengan alamat yang Anda buka. Perbaiki di `.env`, lalu `php artisan config:clear`. Notifikasi baru menyimpan jalur relatif, tapi notifikasi lama masih membawa alamat lengkap yang telanjur dibekukan |
 | Angka pada menu sidebar tidak berubah setelah menyetujui | Seharusnya sudah otomatis. Bila tidak, pastikan `RefreshNavigationBadges` terdaftar di `AppServiceProvider` |
 | Kartu "Kesehatan Sistem" menunjukkan "Habis" | `masjid:sync-prayer-schedules` belum pernah jalan. Jalankan manual, lalu pastikan `php artisan schedule:work` (lokal) atau cron (server) aktif |
+| Konsol browser berisi `[Report Only] … violates the following Content Security Policy` | Peringatan bahwa ada skrip atau atribut `on…=` inline yang akan diblokir di produksi — pindahkan perilakunya ke `resources/js/app.js`. Laporan untuk `browser-logger-active` berasal dari Laravel Boost dan boleh diabaikan |
+| Fitur JavaScript jalan di lokal tapi mati di produksi | Sama seperti di atas: lokal hanya melaporkan, produksi memblokir. Uji dengan `CSP_REPORT_ONLY=false` (langkah 4) |
 
 ---
 

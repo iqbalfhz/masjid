@@ -138,6 +138,12 @@ VAPID_SUBJECT=mailto:admin@masjidannur.or.id
 
 LOG_CHANNEL=daily
 LOG_LEVEL=warning
+
+# Di belakang reverse proxy atau Cloudflare Tunnel (lihat "Header keamanan dan CSP")
+TRUSTED_PROXIES=*
+
+# Biarkan kosong. Sakelar darurat CSP — lihat "Header keamanan dan CSP"
+# CSP_REPORT_ONLY=true
 ```
 
 ### Tiga nilai yang paling sering salah
@@ -156,6 +162,30 @@ lokal, sedangkan "waktu sholat berikutnya" dihitung dari `now()`. Bila dibiarkan
 `UTC`, keduanya meleset 7 jam dan beranda menampilkan waktu sholat yang sudah
 lewat. Untuk masjid di zona lain: `Asia/Makassar` (WITA) atau `Asia/Jayapura`
 (WIT) — singkatan zonanya ikut menyesuaikan otomatis di tampilan.
+
+### Header keamanan dan CSP
+
+Header keamanan (HSTS, anti-clickjacking, Content-Security-Policy, dan lainnya)
+dipasang oleh aplikasi sendiri, bukan oleh web server, jadi tidak ada yang perlu
+dikonfigurasi di Caddy. Daftar lengkap dan alasannya ada di PRD bagian 6.2.
+
+**`TRUSTED_PROXIES`.** Di belakang Cloudflare Tunnel atau reverse proxy, request
+sampai ke aplikasi sebagai HTTP biasa. Tanpa mempercayai proxy, aplikasi mengira
+dirinya tidak diakses lewat HTTPS: header HSTS tidak dikirim dan tautan dibangun
+dengan `http://`. Nilai `*` mempercayai proxy mana pun — aman **hanya bila port
+aplikasi tidak bisa dijangkau langsung dari luar**, misalnya port container yang
+terikat ke `127.0.0.1` (`127.0.0.1:8087:80`). Bila port terbuka ke internet,
+isi dengan IP proxy yang sebenarnya.
+
+**`CSP_REPORT_ONLY` — sakelar darurat.** Halaman publik memblokir semua skrip
+inline. Bila setelah update ada fitur publik yang mendadak mati — tombol tidak
+bereaksi, dan konsol browser menampilkan `violates the following Content
+Security Policy` — isi `CSP_REPORT_ONLY=true` lalu muat ulang konfigurasi
+(`php artisan config:cache`; di Coolify cukup ubah variabel lalu **Restart**).
+Kebijakan tetap dikirim tapi tidak lagi memblokir. Setelah kodenya diperbaiki
+(skrip dipindah ke `resources/js/app.js`), hapus lagi variabel ini.
+
+Setelah deploy, periksa hasilnya di <https://securityheaders.com>.
 
 ---
 
@@ -551,6 +581,9 @@ identitas masjid semuanya bisa diubah tanpa menyentuh kode.
 | Sertifikat HTTPS gagal terbit | Port 80 tertutup (dipakai tantangan ACME) atau DNS belum mengarah ke server. Cek `journalctl -u frankenphp | grep -i acme` |
 | Kode baru tidak aktif setelah update | Bila memakai worker mode, jalankan `php artisan octane:reload`. Di mode klasik, `sudo systemctl reload frankenphp` |
 | Ekstensi PHP ada di `php -m` tapi error saat request | PHP sistem dan PHP bawaan FrankenPHP berbeda. Cek dengan `frankenphp php-cli -m` |
+| Fitur di halaman publik tidak bereaksi; konsol browser berisi `violates the following Content Security Policy` | Ada skrip atau atribut `on…=` inline yang diblokir CSP publik. Sementara: `CSP_REPORT_ONLY=true` (bagian 3). Permanen: pindahkan perilakunya ke `resources/js/app.js` |
+| Peta di halaman kontak kosong | Tautan harus berupa embed Google Maps. Domain peta lain diblokir `frame-src` — tambahkan di `SecurityHeaders::PUBLIK` bila memang perlu |
+| securityheaders.com tidak menemukan HSTS | Aplikasi tidak tahu dirinya diakses lewat HTTPS. Pastikan `TRUSTED_PROXIES` terisi, lalu cache ulang config |
 
 ---
 
@@ -567,6 +600,9 @@ identitas masjid semuanya bisa diubah tanpa menyentuh kode.
 - [ ] `DemoContentSeeder` tidak pernah dijalankan di server
 - [ ] Backup harian berjalan dan **pernah diuji restore**
 - [ ] `composer install` memakai `--no-dev`
+- [ ] Header keamanan terkirim — periksa di securityheaders.com (sebelum audit nilainya F)
+- [ ] `CSP_REPORT_ONLY` tidak diisi; `true` hanya untuk keadaan darurat
+- [ ] Bila `TRUSTED_PROXIES=*`, port aplikasi hanya terikat ke `127.0.0.1`
 
 Rate limiting form publik (testimoni, saran, RSVP, pendaftaran) sudah aktif dari
 kode sesuai PRD bagian 6 — tidak perlu konfigurasi tambahan di server.

@@ -197,6 +197,52 @@ document.addEventListener('click', async (event) => {
     }
 });
 
+// --- Gambar cadangan (x-public.image) -----------------------------------
+//
+// Pengganti atribut onerror, yang diblokir CSP halaman publik. Event error
+// tidak menggelembung, jadi ditangkap di fase capture; gambar yang sudah gagal
+// sebelum skrip ini sempat dimuat ditangani saat halaman dibuka.
+
+const pakaiCadangan = (img) => {
+    const cadangan = img.dataset.fallback;
+
+    if (!cadangan) {
+        return;
+    }
+
+    // Dilepas dulu agar placeholder yang ikut gagal tidak berulang tanpa akhir.
+    delete img.dataset.fallback;
+    img.src = cadangan;
+};
+
+document.addEventListener(
+    'error',
+    (event) => {
+        if (event.target instanceof HTMLImageElement) {
+            pakaiCadangan(event.target);
+        }
+    },
+    true
+);
+
+document.querySelectorAll('img[data-fallback]').forEach((img) => {
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute('src') !== img.dataset.fallback) {
+        pakaiCadangan(img);
+    }
+});
+
+// --- Kirim formulir begitu pilihan berubah (filter kategori) ------------
+//
+// Pengganti atribut onchange, yang diblokir CSP halaman publik.
+
+document.addEventListener('change', (event) => {
+    const pemilih = event.target.closest('[data-auto-submit]');
+
+    if (pemilih?.form) {
+        pemilih.form.submit();
+    }
+});
+
 // --- Reminder sholat (Web Push) -----------------------------------------
 
 const tombolReminder = document.querySelector('[data-push-toggle]');

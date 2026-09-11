@@ -54,6 +54,22 @@ it('membuka semua halaman daftar resource untuk superadmin', function (string $p
     '/admin/kalender',
 ]);
 
+it('membuka daftar pengguna yang berisi banyak akun', function (): void {
+    // Kolom Role dan aksi tiap baris membaca relasi roles. Lazy loading dilarang
+    // di luar produksi, jadi relasi yang lupa di-eager load membuat halaman ini
+    // error 500 — tapi hanya bila tabelnya berisi lebih dari satu baris, sehingga
+    // test di atas yang hanya berisi akun superadmin tidak pernah menangkapnya.
+    $superadmin = userWithRole(UserRole::Superadmin);
+    userWithRole(UserRole::Admin, ['name' => 'Akun Admin Uji']);
+    userWithRole(UserRole::Bendahara, ['name' => 'Akun Bendahara Uji']);
+
+    $this->actingAs($superadmin)
+        ->get('/admin/users')
+        ->assertSuccessful()
+        ->assertSee('Akun Admin Uji')
+        ->assertSee('Akun Bendahara Uji');
+});
+
 it('menghalangi Bendahara membuka manajemen user', function (): void {
     $this->actingAs(userWithRole(UserRole::Bendahara))
         ->get('/admin/users')
