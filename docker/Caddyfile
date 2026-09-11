@@ -18,12 +18,21 @@
 	root /app/public
 	encode zstd br gzip
 
-	# Tolak berkas tersembunyi (.env, .git) bila sesuatu terlanjur ikut ke image.
-	@tersembunyi path_regexp /\.(?!well-known)
-	respond @tersembunyi 403
+	# Tidak ada penolak berkas titik di sini, dan itu disengaja.
+	#
+	# Yang melindungi `.env` adalah letaknya: ia berada di /app, sementara yang
+	# dilayani hanya /app/public — Caddy secara struktural tidak bisa
+	# menjangkaunya. Satu-satunya berkas titik di dalam docroot adalah
+	# `.htaccess`, yang tidak dipakai Caddy dan tidak memuat rahasia.
+	#
+	# Versi sebelumnya memasang matcher untuk itu dan justru menjatuhkan
+	# container: polanya memakai negative lookahead gaya Nginx, sedangkan Caddy
+	# memakai RE2 milik Go yang tidak mendukungnya. Aturan dengan manfaat nol
+	# tapi risiko nyata lebih baik tidak ada.
 
-	php_server {
-		# Laravel menaruh seluruh permintaan lewat satu front controller.
-		try_files {path} index.php
-	}
+	# `php_server` sudah menangani pola front controller Laravel secara bawaan:
+	# berkas statis dilayani apa adanya, sisanya diteruskan ke index.php.
+	# Sengaja dibiarkan polos tanpa subdirektif — ia tidak menerima `try_files`,
+	# dan konfigurasi minimal inilah yang dicontohkan dokumentasi FrankenPHP.
+	php_server
 }
