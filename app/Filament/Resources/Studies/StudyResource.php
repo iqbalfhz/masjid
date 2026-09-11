@@ -10,18 +10,14 @@ use App\Filament\Resources\Studies\RelationManagers\RsvpsRelationManager;
 use App\Filament\Resources\Studies\Schemas\StudyForm;
 use App\Filament\Resources\Studies\Tables\StudiesTable;
 use App\Models\Study;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
 class StudyResource extends Resource
 {
     protected static ?string $model = Study::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
 

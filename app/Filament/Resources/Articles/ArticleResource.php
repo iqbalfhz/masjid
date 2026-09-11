@@ -9,10 +9,8 @@ use App\Filament\Resources\Articles\Pages\ListArticles;
 use App\Filament\Resources\Articles\Schemas\ArticleForm;
 use App\Filament\Resources\Articles\Tables\ArticlesTable;
 use App\Models\Article;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
@@ -20,9 +18,7 @@ class ArticleResource extends Resource
 {
     protected static ?string $model = Article::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
+    protected static string|UnitEnum|null $navigationGroup = 'Media & Pustaka';
 
     protected static ?string $navigationLabel = 'Artikel';
 
@@ -30,7 +26,7 @@ class ArticleResource extends Resource
 
     protected static ?string $pluralModelLabel = 'artikel';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'title';
 

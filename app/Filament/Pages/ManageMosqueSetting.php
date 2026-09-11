@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Models\MosqueSetting;
 use App\Models\PrayerSchedule;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
@@ -21,7 +20,6 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
@@ -34,13 +32,11 @@ class ManageMosqueSetting extends Page
 {
     use InteractsWithFormActions;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Sistem';
+    protected static string|UnitEnum|null $navigationGroup = 'Profil Masjid';
 
     protected static ?string $navigationLabel = 'Pengaturan Umum';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $slug = 'pengaturan';
 

@@ -8,7 +8,6 @@ use App\Filament\Resources\FacilityBookings\Pages\EditFacilityBooking;
 use App\Filament\Resources\FacilityBookings\Pages\ListFacilityBookings;
 use App\Models\FacilityBooking;
 use App\Models\User;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -24,7 +23,6 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -38,8 +36,6 @@ use UnitEnum;
 class FacilityBookingResource extends Resource
 {
     protected static ?string $model = FacilityBooking::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 

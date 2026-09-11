@@ -6,7 +6,6 @@ use App\Filament\Resources\PrayerSchedules\Pages\CreatePrayerSchedule;
 use App\Filament\Resources\PrayerSchedules\Pages\EditPrayerSchedule;
 use App\Filament\Resources\PrayerSchedules\Pages\ListPrayerSchedules;
 use App\Models\PrayerSchedule;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -18,7 +17,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -35,8 +33,6 @@ use UnitEnum;
 class PrayerScheduleResource extends Resource
 {
     protected static ?string $model = PrayerSchedule::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     protected static string|UnitEnum|null $navigationGroup = 'Profil Masjid';
 

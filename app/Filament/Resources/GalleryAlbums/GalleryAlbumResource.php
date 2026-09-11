@@ -7,7 +7,6 @@ use App\Filament\Resources\GalleryAlbums\Pages\EditGalleryAlbum;
 use App\Filament\Resources\GalleryAlbums\Pages\ListGalleryAlbums;
 use App\Filament\Resources\GalleryAlbums\RelationManagers\ItemsRelationManager;
 use App\Models\GalleryAlbum;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,7 +20,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -33,9 +31,7 @@ class GalleryAlbumResource extends Resource
 {
     protected static ?string $model = GalleryAlbum::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
+    protected static string|UnitEnum|null $navigationGroup = 'Media & Pustaka';
 
     protected static ?string $navigationLabel = 'Galeri';
 
@@ -43,7 +39,7 @@ class GalleryAlbumResource extends Resource
 
     protected static ?string $pluralModelLabel = 'album galeri';
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'title';
 

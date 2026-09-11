@@ -6,7 +6,6 @@ use App\Enums\ModerationStatus;
 use App\Filament\Resources\Testimonials\Pages\ListTestimonials;
 use App\Models\Testimonial;
 use App\Models\User;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -15,7 +14,6 @@ use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -31,8 +29,6 @@ use UnitEnum;
 class TestimonialResource extends Resource
 {
     protected static ?string $model = Testimonial::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChatBubbleLeftEllipsis;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 

@@ -10,7 +10,6 @@ use App\Filament\Resources\ZakatRegistrations\Pages\EditZakatRegistration;
 use App\Filament\Resources\ZakatRegistrations\Pages\ListZakatRegistrations;
 use App\Models\User;
 use App\Models\ZakatRegistration;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -25,7 +24,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -39,8 +37,6 @@ use UnitEnum;
 class ZakatRegistrationResource extends Resource
 {
     protected static ?string $model = ZakatRegistration::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHandRaised;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 

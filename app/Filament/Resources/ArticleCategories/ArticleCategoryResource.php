@@ -6,7 +6,6 @@ use App\Filament\Resources\ArticleCategories\Pages\CreateArticleCategory;
 use App\Filament\Resources\ArticleCategories\Pages\EditArticleCategory;
 use App\Filament\Resources\ArticleCategories\Pages\ListArticleCategories;
 use App\Models\ArticleCategory;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,7 +14,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use UnitEnum;
@@ -24,9 +22,7 @@ class ArticleCategoryResource extends Resource
 {
     protected static ?string $model = ArticleCategory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
+    protected static string|UnitEnum|null $navigationGroup = 'Media & Pustaka';
 
     protected static ?string $navigationLabel = 'Kategori Artikel';
 
@@ -34,7 +30,7 @@ class ArticleCategoryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'kategori artikel';
 
-    protected static ?int $navigationSort = 5;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 

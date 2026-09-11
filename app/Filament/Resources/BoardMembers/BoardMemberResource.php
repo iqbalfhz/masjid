@@ -6,7 +6,6 @@ use App\Filament\Resources\BoardMembers\Pages\CreateBoardMember;
 use App\Filament\Resources\BoardMembers\Pages\EditBoardMember;
 use App\Filament\Resources\BoardMembers\Pages\ListBoardMembers;
 use App\Models\BoardMember;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,7 +16,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -27,8 +25,6 @@ use UnitEnum;
 class BoardMemberResource extends Resource
 {
     protected static ?string $model = BoardMember::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     protected static string|UnitEnum|null $navigationGroup = 'Profil Masjid';
 

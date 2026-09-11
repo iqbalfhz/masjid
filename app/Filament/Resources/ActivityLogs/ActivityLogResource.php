@@ -5,7 +5,6 @@ namespace App\Filament\Resources\ActivityLogs;
 use App\Filament\Resources\ActivityLogs\Pages\ListActivityLogs;
 use App\Models\User;
 use App\Support\ActivityLogPresenter;
-use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -13,7 +12,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -34,8 +32,6 @@ use UnitEnum;
 class ActivityLogResource extends Resource
 {
     protected static ?string $model = Activity::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
 
     protected static string|UnitEnum|null $navigationGroup = 'Sistem';
 

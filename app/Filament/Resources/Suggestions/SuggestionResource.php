@@ -7,7 +7,6 @@ use App\Enums\SuggestionStatus;
 use App\Filament\Resources\Suggestions\Pages\EditSuggestion;
 use App\Filament\Resources\Suggestions\Pages\ListSuggestions;
 use App\Models\Suggestion;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -18,7 +17,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -31,8 +29,6 @@ use UnitEnum;
 class SuggestionResource extends Resource
 {
     protected static ?string $model = Suggestion::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInbox;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 

@@ -4,9 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Event;
 use App\Models\Study;
-use BackedEnum;
 use Filament\Pages\Page;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
@@ -17,13 +15,11 @@ use UnitEnum;
  */
 class ActivityCalendar extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendar;
-
     protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
 
     protected static ?string $navigationLabel = 'Kalender Kegiatan';
 
-    protected static ?int $navigationSort = 9;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $slug = 'kalender';
 

@@ -6,7 +6,6 @@ use App\Filament\Resources\Facilities\Pages\CreateFacility;
 use App\Filament\Resources\Facilities\Pages\EditFacility;
 use App\Filament\Resources\Facilities\Pages\ListFacilities;
 use App\Models\Facility;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,7 +16,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -26,8 +24,6 @@ use UnitEnum;
 class FacilityResource extends Resource
 {
     protected static ?string $model = Facility::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 

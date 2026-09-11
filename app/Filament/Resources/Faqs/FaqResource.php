@@ -6,7 +6,6 @@ use App\Filament\Resources\Faqs\Pages\CreateFaq;
 use App\Filament\Resources\Faqs\Pages\EditFaq;
 use App\Filament\Resources\Faqs\Pages\ListFaqs;
 use App\Models\Faq;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +15,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -27,9 +25,7 @@ class FaqResource extends Resource
 {
     protected static ?string $model = Faq::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQuestionMarkCircle;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
+    protected static string|UnitEnum|null $navigationGroup = 'Media & Pustaka';
 
     protected static ?string $navigationLabel = 'FAQ';
 
@@ -37,7 +33,7 @@ class FaqResource extends Resource
 
     protected static ?string $pluralModelLabel = 'FAQ';
 
-    protected static ?int $navigationSort = 8;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $recordTitleAttribute = 'question';
 

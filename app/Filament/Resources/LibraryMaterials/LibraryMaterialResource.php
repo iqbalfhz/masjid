@@ -7,7 +7,6 @@ use App\Filament\Resources\LibraryMaterials\Pages\CreateLibraryMaterial;
 use App\Filament\Resources\LibraryMaterials\Pages\EditLibraryMaterial;
 use App\Filament\Resources\LibraryMaterials\Pages\ListLibraryMaterials;
 use App\Models\LibraryMaterial;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,7 +20,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -34,9 +32,7 @@ class LibraryMaterialResource extends Resource
 {
     protected static ?string $model = LibraryMaterial::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
-
-    protected static string|UnitEnum|null $navigationGroup = 'Konten & Informasi';
+    protected static string|UnitEnum|null $navigationGroup = 'Media & Pustaka';
 
     protected static ?string $navigationLabel = 'E-Library';
 
@@ -44,7 +40,7 @@ class LibraryMaterialResource extends Resource
 
     protected static ?string $pluralModelLabel = 'materi kajian';
 
-    protected static ?int $navigationSort = 7;
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $recordTitleAttribute = 'title';
 

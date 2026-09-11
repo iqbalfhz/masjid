@@ -8,18 +8,14 @@ use App\Filament\Resources\FinanceTransactions\Pages\ListFinanceTransactions;
 use App\Filament\Resources\FinanceTransactions\Schemas\FinanceTransactionForm;
 use App\Filament\Resources\FinanceTransactions\Tables\FinanceTransactionsTable;
 use App\Models\FinanceTransaction;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use UnitEnum;
 
 class FinanceTransactionResource extends Resource
 {
     protected static ?string $model = FinanceTransaction::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static string|UnitEnum|null $navigationGroup = 'Keuangan';
 

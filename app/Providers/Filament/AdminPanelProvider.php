@@ -2,15 +2,17 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Pages\Dashboard;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -54,6 +56,42 @@ class AdminPanelProvider extends PanelProvider
              */
             ->databaseNotifications()
             ->databaseNotificationsPolling('30s')
+            /*
+             * Urutan grup mengikuti seberapa sering dipakai Tim DKM: pekerjaan
+             * konten harian di atas, urusan administratif di bawah.
+             *
+             * Ikon dipasang di tingkat grup, bukan di tiap menu. Filament hanya
+             * mengizinkan salah satu, dan pilihan ini sekaligus mengaktifkan
+             * penanda hierarki bawaannya: begitu menu tidak berikon, Filament
+             * merender sendiri titik bertali (fi-sidebar-item-grouped-border)
+             * di bawah ikon grupnya — pola yang sama dengan referensi NADI,
+             * tanpa perlu CSS tambahan.
+             *
+             * Semua grup dapat dilipat, dan hanya satu terbuka pada satu waktu
+             * (resources/views/filament/sidebar-accordion.blade.php). Dengan 25
+             * menu, membuka semuanya sekaligus membuat sidebar jauh lebih
+             * panjang daripada layar.
+             */
+            ->navigationGroups([
+                NavigationGroup::make('Konten & Informasi')
+                    ->icon('heroicon-o-megaphone')
+                    ->collapsible(),
+                NavigationGroup::make('Media & Pustaka')
+                    ->icon('heroicon-o-photo')
+                    ->collapsible(),
+                NavigationGroup::make('Layanan Jamaah')
+                    ->icon('heroicon-o-hand-raised')
+                    ->collapsible(),
+                NavigationGroup::make('Keuangan')
+                    ->icon('heroicon-o-banknotes')
+                    ->collapsible(),
+                NavigationGroup::make('Profil Masjid')
+                    ->icon('heroicon-o-building-library')
+                    ->collapsible(),
+                NavigationGroup::make('Sistem')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsible(),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -75,13 +113,34 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                /*
+                 * Shield menaruh Peran di grup "Filament Shield" miliknya
+                 * sendiri — nama teknis yang tidak berarti bagi Tim DKM, dan
+                 * menyisakan satu grup berisi satu menu. Dipindahkan ke Sistem,
+                 * berdampingan dengan Pengguna dan Log Aktivitas.
+                 *
+                 * Ikonnya juga dilepas — termasuk ikon versi aktif, yang ikut
+                 * diperiksa Filament saat melarang ikon di dua tingkat.
+                 */
+                FilamentShieldPlugin::make()
+                    ->navigationGroup('Sistem')
+                    ->navigationLabel('Peran & Hak Akses')
+                    ->navigationSort(2)
+                    ->navigationIcon(null)
+                    ->activeNavigationIcon(null),
                 FilamentFullCalendarPlugin::make()
                     ->selectable(false)
                     ->editable(false)
                     ->timezone(config('app.timezone'))
                     ->locale('id'),
             ])
+            /*
+             * Sidebar akordion: hanya satu grup terbuka pada satu waktu.
+             */
+            ->renderHook(
+                PanelsRenderHook::SCRIPTS_AFTER,
+                fn (): string => view('filament.sidebar-accordion')->render(),
+            )
             ->authMiddleware([
                 Authenticate::class,
             ]);

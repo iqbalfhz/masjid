@@ -7,7 +7,6 @@ use App\Filament\Resources\FinanceCategories\Pages\CreateFinanceCategory;
 use App\Filament\Resources\FinanceCategories\Pages\EditFinanceCategory;
 use App\Filament\Resources\FinanceCategories\Pages\ListFinanceCategories;
 use App\Models\FinanceCategory;
-use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -18,7 +17,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -32,8 +30,6 @@ use UnitEnum;
 class FinanceCategoryResource extends Resource
 {
     protected static ?string $model = FinanceCategory::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleGroup;
 
     protected static string|UnitEnum|null $navigationGroup = 'Keuangan';
 

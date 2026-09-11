@@ -10,7 +10,6 @@ use App\Filament\Resources\QurbanRegistrations\Pages\EditQurbanRegistration;
 use App\Filament\Resources\QurbanRegistrations\Pages\ListQurbanRegistrations;
 use App\Models\QurbanRegistration;
 use App\Models\User;
-use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -24,7 +23,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -39,8 +37,6 @@ use UnitEnum;
 class QurbanRegistrationResource extends Resource
 {
     protected static ?string $model = QurbanRegistration::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;
 
     protected static string|UnitEnum|null $navigationGroup = 'Layanan Jamaah';
 
