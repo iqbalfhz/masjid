@@ -48,6 +48,15 @@ RUN install-php-extensions \
         pdo_mysql \
         opcache
 
+# `curl` dipasang eksplisit karena healthcheck Coolify menjalankannya di dalam
+# container. Tanpa curl, perintahnya gagal, container ditandai `unhealthy`, dan
+# Traefik menolak merutekan ke sana — pengunjung hanya melihat 502 meski
+# aplikasinya sendiri sehat. Kegagalan ini menyesatkan: log aplikasi bersih,
+# karena permintaannya tak pernah sampai.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # ---------------------------------------------------------------------------
@@ -107,6 +116,13 @@ RUN { \
     } > /usr/local/etc/php/conf.d/masjid.ini
 
 EXPOSE 80
+
+# Laravel sudah menyediakan route kesehatan di /up (lihat bootstrap/app.php).
+# Memakainya lebih tepat daripada memeriksa halaman depan: /up menjawab tanpa
+# menyentuh basis data maupun session, jadi ia menguji "aplikasi melayani
+# permintaan", bukan "seluruh sistem sehat".
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:80/up || exit 1
 
 ENTRYPOINT ["entrypoint"]
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
