@@ -59,6 +59,16 @@ it('memberi admin panel CSP yang cukup longgar untuk Alpine dan Livewire', funct
         ->and(sumberCsp($csp, 'img-src'))->toContain('https://ui-avatars.com');
 });
 
+it('mengizinkan worker blob di admin untuk pratinjau gambar unggahan', function (): void {
+    // FilePond membuat Web Worker dari URL blob: untuk menggambar pratinjau.
+    // Tanpa izin ini, kolom unggah hanya menampilkan nama dan ukuran berkas di
+    // atas kotak abu-abu. Kasus ini lolos dari pemeriksaan form "create" yang
+    // masih kosong, dan baru terlihat saat mengubah data yang sudah bergambar.
+    $csp = $this->get('/admin/login')->assertSuccessful()->headers->get('Content-Security-Policy');
+
+    expect(sumberCsp($csp, 'worker-src'))->toContain('blob:');
+});
+
 it('memakai CSP admin juga di halaman login, bukan kebijakan publik', function (): void {
     // Halaman login Filament sendiri berjalan di atas Alpine dan Livewire. Bila
     // ia mendapat kebijakan publik yang ketat, formulirnya mati dan tidak ada

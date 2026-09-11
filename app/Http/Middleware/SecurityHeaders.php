@@ -81,6 +81,10 @@ class SecurityHeaders
         'font-src' => ["'self'", 'data:'],
         'connect-src' => ["'self'"],
         'frame-src' => ["'self'"],
+        // Pratinjau gambar di kolom unggah (FilePond) digambar oleh Web Worker
+        // yang dibuat dari URL blob:. Tanpa ini, gambar yang sudah tersimpan
+        // tampil sebagai kotak abu-abu berisi nama berkas saja.
+        'worker-src' => ["'self'", 'blob:'],
         'object-src' => ["'none'"],
         'base-uri' => ["'self'"],
         'form-action' => ["'self'"],

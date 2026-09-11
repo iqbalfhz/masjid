@@ -584,6 +584,7 @@ identitas masjid semuanya bisa diubah tanpa menyentuh kode.
 | Fitur di halaman publik tidak bereaksi; konsol browser berisi `violates the following Content Security Policy` | Ada skrip atau atribut `on…=` inline yang diblokir CSP publik. Sementara: `CSP_REPORT_ONLY=true` (bagian 3). Permanen: pindahkan perilakunya ke `resources/js/app.js` |
 | Peta di halaman kontak kosong | Tautan harus berupa embed Google Maps. Domain peta lain diblokir `frame-src` — tambahkan di `SecurityHeaders::PUBLIK` bila memang perlu |
 | securityheaders.com tidak menemukan HSTS | Aplikasi tidak tahu dirinya diakses lewat HTTPS. Pastikan `TRUSTED_PROXIES` terisi, lalu cache ulang config |
+| Pratinjau gambar di form admin berupa kotak abu-abu (nama berkas terlihat, gambarnya tidak) | CSP admin memblokir Web Worker `blob:` milik FilePond. Pastikan `worker-src 'self' blob:` ada di `SecurityHeaders::ADMIN` |
 
 ---
 

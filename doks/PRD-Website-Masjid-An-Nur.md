@@ -463,8 +463,9 @@ Semuanya improvisasi di luar rancangan awal.
   Peta di halaman kontak diizinkan lewat `frame-src` untuk `maps.google.com` dan
   `www.google.com` — yang pertama mengalihkan ke yang kedua.
 - *Admin panel — dilonggarkan.* `'unsafe-inline' 'unsafe-eval'`, karena Alpine.js
-  dan Livewire membutuhkannya. Admin berada di balik login, sehingga paparannya
-  jauh lebih kecil.
+  dan Livewire membutuhkannya, ditambah `worker-src blob:` untuk pratinjau gambar
+  di kolom unggah — FilePond menggambarnya lewat Web Worker dari URL `blob:`.
+  Admin berada di balik login, sehingga paparannya jauh lebih kecil.
 
 Konsekuensinya, view publik tidak boleh memuat skrip inline maupun atribut
 `on…=`. Dua yang sempat ada — `onchange` pada filter kategori kegiatan dan
@@ -492,7 +493,16 @@ environment server lalu restart, tanpa mengubah kode.
 dengan CSP ditegakkan, 22 halaman publik dan 43 halaman admin (termasuk login,
 RichEditor, unggah berkas, kalender, dan grafik dashboard). Kontrol positif:
 skrip inline yang disisipkan ke halaman publik terbukti diblokir, sedangkan di
-admin tetap berjalan.
+admin tetap berjalan. Pemeriksaan yang sama diulang di produksi (di balik
+Cloudflare) setelah deploy: 19 halaman publik dan halaman login admin, nol
+pelanggaran; font lokal, peta, dan gambar cadangan berfungsi.
+
+Satu kasus lolos dari pemeriksaan tersebut: pratinjau gambar yang **sudah
+tersimpan** di kolom unggah admin. Form *create* yang diperiksa masih kosong,
+sehingga FilePond tidak pernah membuat worker-nya; setelah deploy, form ubah
+menampilkan kotak abu-abu berisi nama berkas saja. Diperbaiki dengan
+`worker-src 'self' blob:`, dibuktikan di browser (pratinjau kembali tergambar,
+nol pelanggaran), dan dijaga `ContentSecurityPolicyTest`.
 
 **Belum dikerjakan:** avatar bawaan Filament diambil dari `ui-avatars.com`,
 sehingga nama pengurus terkirim ke layanan pihak ketiga. Bisa diganti avatar
