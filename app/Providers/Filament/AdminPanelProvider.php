@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Dashboard;
+use App\Http\Middleware\SecurityHeaders;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -111,6 +112,14 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                /*
+                 * Panel Filament mendaftarkan tumpukan middleware-nya sendiri
+                 * dan tidak memakai grup `web`, jadi header keamanan yang
+                 * dipasang di bootstrap/app.php tidak sampai ke sini. Tanpa
+                 * baris ini admin panel tetap tanpa perlindungan clickjacking —
+                 * justru di bagian yang memegang seluruh data masjid.
+                 */
+                SecurityHeaders::class,
             ])
             ->plugins([
                 /*

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -33,6 +34,17 @@ return Application::configure(basePath: dirname(__DIR__))
          * agar header X-Forwarded-* tidak bisa dipalsukan pengunjung.
          */
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', '*'));
+
+        /*
+         * Header keamanan browser (lihat App\Http\Middleware\SecurityHeaders).
+         *
+         * Dipasang sebagai `append` agar berlaku untuk seluruh respons web —
+         * halaman publik maupun admin panel — tanpa perlu didaftarkan satu per
+         * satu di tiap rute.
+         */
+        $middleware->web(append: [
+            SecurityHeaders::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
