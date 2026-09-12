@@ -132,6 +132,19 @@ VAPID_SUBJECT=mailto:admin@masjidannur.test
 > seperti produksi: `npm run build`, isi `CSP_REPORT_ONLY=false`, lalu
 > `php artisan config:clear`. Aturan lengkapnya ada di PRD bagian 6.2.
 
+### Variabel lain yang jarang disentuh di lokal
+
+Nilainya sudah benar di `.env.example`, tapi ada baiknya tahu fungsinya — semuanya
+menentukan perilaku di produksi.
+
+| Variabel | Fungsi | Di lokal |
+|---|---|---|
+| `SESSION_SECURE_COOKIE` | Cookie login hanya dikirim lewat HTTPS | `false`, karena development berjalan di `http` |
+| `TRUSTED_PROXIES` | Proxy yang boleh dipercaya soal "request ini datang lewat HTTPS" | Tidak berpengaruh; tidak ada proxy di depan |
+| `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK` | Disk penyimpanan berkas yang sedang diunggah | `local` — tanpa ini berkas sementara masuk ke disk publik dan bisa diakses lewat `/storage` |
+| `PRAYER_API_SYNC_MONTHS` | Berapa bulan ke depan ikut disinkronkan | `2`, artinya jadwal selalu tersedia sampai akhir bulan ketiga |
+| `CSP_REPORT_ONLY` | Menurunkan Content-Security-Policy menjadi sekadar laporan | Otomatis aktif saat `APP_ENV=local` |
+
 ---
 
 ## 5. Buat Database
@@ -426,3 +439,38 @@ melihat perbedaannya.
 3. Ganti akun dummy dengan data pengurus asli sebelum go-live.
 4. Hapus konten contoh bila tidak diperlukan (`DemoContentSeeder` tidak jalan di production).
 
+
+---
+
+## 18. Peta Kode
+
+Tempat mencari sesuatu, beserta hal yang mudah terlewat di tiap folder.
+
+| Lokasi | Isi |
+|---|---|
+| `app/Filament/Resources/` | Satu folder per modul admin: form, tabel, halaman |
+| `app/Filament/Pages/` | Halaman admin non-CRUD: Dashboard, Kalender Kegiatan, Pengaturan Umum |
+| `app/Filament/Widgets/` | Kartu dashboard, termasuk Kesehatan Sistem dan Antrean Approval |
+| `app/Http/Controllers/` | Seluruh halaman publik, satu controller per halaman |
+| `app/Http/Middleware/SecurityHeaders.php` | Header keamanan dan Content-Security-Policy publik/admin |
+| `app/Models/` | Model Eloquent; `MosqueSetting` adalah tabel pengaturan bernilai tunggal |
+| `app/Services/` | `PrayerScheduleService` (sinkron jadwal) dan `WebPushService` (kirim pengingat) |
+| `app/Support/` | Perkakas lintas modul: `ImmediateDatabaseNotification`, `ApprovableModules` |
+| `app/Console/Commands/` | `masjid:sync-prayer-schedules`, `masjid:send-prayer-reminders`, `masjid:vapid-keys` |
+| `routes/web.php` | Rute publik, termasuk `/site.webmanifest` |
+| `routes/console.php` | Dua pekerjaan terjadwal beserta jadwalnya |
+| `resources/views/public/` | Halaman publik; `layouts/public.blade.php` memuat `<head>`, header, dan footer |
+| `resources/js/app.js` | Seluruh perilaku halaman publik. Tidak ada skrip inline di view — CSP memblokirnya |
+| `resources/css/app.css` | Palet warna, `@font-face`, dan gaya bersama |
+| `resources/fonts/` | Instrument Sans disimpan di repo, bukan diambil dari CDN, supaya build tidak bergantung pada jaringan luar dan tidak ada permintaan ke pihak ketiga dari browser jamaah |
+| `public/sw.js` | Service worker pengingat sholat. Mengambil isi notifikasi dari `/push/konten` saat push datang, sehingga tidak ada data jamaah yang melewati layanan push browser |
+| `public/images/` | Ikon aplikasi dan notifikasi (`icon-192`, `icon-512`, `apple-touch-icon`, `badge-72`). Dibuat sekali dengan GD; manifest otomatis memakai logo dari Pengaturan Umum bila pengurus sudah mengunggahnya |
+| `docker/` | `Caddyfile` dan `entrypoint.sh` untuk image produksi |
+| `database/seeders/` | `RoleSeeder`, `MasterDataSeeder`, `UserSeeder`, dan `DemoContentSeeder` yang hanya jalan di lokal |
+| `tests/Feature/` | Hampir seluruhnya menjaga jebakan yang pernah benar-benar terjadi; alasannya ditulis di komentar tiap test |
+| `doks/` | PRD, tutorial ini, dan panduan deploy |
+
+Dua berkas yang paling sering perlu dibaca lebih dulu saat menelusuri masalah:
+`app/Providers/AppServiceProvider.php` (pengaturan global, termasuk larangan lazy
+loading) dan `app/Providers/Filament/AdminPanelProvider.php` (susunan menu admin,
+middleware panel, dan plugin).

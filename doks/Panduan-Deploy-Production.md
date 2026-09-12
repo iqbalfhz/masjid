@@ -779,29 +779,8 @@ environment atau tabel pengaturan.
 
 ### Tanpa Coolify
 
-Image yang sama bisa dijalankan di host Docker mana pun. Perintah berikut adalah
-padanan dari yang dikerjakan Coolify, **belum diuji di luar Coolify**:
-
-```bash
-docker build -t masjid .
-docker volume create masjid-storage
-docker run -d --name masjid --restart unless-stopped \
-  --env-file .env.production \
-  -p 127.0.0.1:8087:80 \
-  -v masjid-storage:/app/storage/app/public \
-  masjid
-```
-
-Tambahkan cron di host sebagai pengganti Scheduled Task:
-
-```cron
-* * * * * docker exec masjid php artisan schedule:run >> /dev/null 2>&1
-```
-
-Dua catatan: berkas `--env-file` tidak membuang tanda kutip, jadi tulis
-`APP_NAME=Masjid An-Nur` tanpa kutip. Dan tanpa proxy atau tunnel di depannya,
-isi `SERVER_NAME` dengan nama domain serta buka port 80 dan 443 — FrankenPHP
-akan menerbitkan sertifikat HTTPS sendiri.
+Image di repo ini berdiri sendiri — Coolify hanya pembungkusnya. Langkah
+lengkap memasangnya di VPS biasa ada di bagian 15.
 
 ---
 
@@ -896,3 +875,227 @@ menggantinya lagi lewat halaman **Profil**.
 
 Rate limiting form publik (testimoni, saran, RSVP, pendaftaran) sudah aktif dari
 kode sesuai PRD bagian 6 — tidak perlu konfigurasi tambahan di server.
+
+---
+
+## 14. Pemeliharaan Rutin
+
+Setelah semuanya berjalan, pekerjaan yang tersisa sedikit — tapi tidak nol.
+Daftar ini sengaja pendek supaya benar-benar dikerjakan.
+
+### Otomatis, tanpa Anda sentuh
+
+| Kapan | Apa |
+|---|---|
+| Tiap menit | Scheduler mengirim pengingat sholat bagi jamaah yang berlangganan |
+| Tiap hari 01.30 | Sinkronisasi jadwal sholat tiga bulan ke depan |
+| Tiap hari | Tiga lapisan backup (bagian 10) |
+| Tiap push ke `main` | Build dan deploy, termasuk migrasi database |
+
+Semua kegagalannya dikabarkan ke Telegram. **Tidak ada kabar berarti tidak ada
+masalah** — bukan berarti tidak ada yang berjalan; itulah sebabnya pemeriksaan
+di bawah tetap diperlukan.
+
+### Mingguan, sekitar dua menit
+
+1. Buka **Dashboard** admin, lihat kartu **Kesehatan Sistem**: sisa hari jadwal
+   sholat masih wajar, dan pengingat masih terkirim.
+2. Buka daftar **Executions** backup database di Coolify: entri terbaru harus
+   dari hari ini.
+3. Di Terminal server: `ls -lh /backup/masjid | tail -3` — arsip terbaru harus
+   bertanggal hari ini dan ukurannya tidak menyusut drastis.
+
+### Bulanan, sekitar lima belas menit
+
+1. **Uji restore** satu backup ke database uji (prosedurnya di bagian 10). Ini
+   satu-satunya cara mengetahui backup Anda benar-benar bisa dipakai.
+2. Periksa ruang disk: `df -h /` di server Coolify dan `df -h /var/lib/vz` di
+   Proxmox.
+3. Tinjau akun pengurus: hapus yang sudah tidak aktif, pastikan tidak ada akun
+   dummy yang tersisa.
+4. Periksa pembaruan Coolify dan Proxmox, lalu pasang di waktu sepi.
+
+### Saat ada yang berubah di masjid
+
+| Perubahan | Yang perlu disesuaikan |
+|---|---|
+| Pengurus baru / pengurus keluar | Menu **Pengguna** di admin panel |
+| Pindah lokasi atau koreksi titik | Koordinat di **Pengaturan Umum** — jadwal sholat mengikutinya |
+| Ganti rekening atau QRIS | **Pengaturan Umum → Donasi** |
+| Ganti domain | `APP_URL` di Coolify, rute Public Hostname di Cloudflare, lalu Restart |
+
+### Yang jangan dilakukan
+
+- **Menyunting berkas lewat Terminal container.** Opcache tidak membacanya, dan
+  perubahannya hilang di deploy berikutnya. Semua perubahan kode lewat Git.
+- **Menjalankan `DemoContentSeeder` di server.** Ia mengisi database dengan
+  konten contoh.
+- **Mengganti kunci VAPID** tanpa alasan kuat. Seluruh langganan pengingat jamaah
+  langsung tidak sah dan harus didaftarkan ulang satu per satu.
+
+
+---
+
+## 15. Memasang Tanpa Coolify
+
+Bagian 1–14 mengikuti instalasi yang benar-benar berjalan, dan instalasi itu
+memakai Coolify. Tapi Coolify hanya pembungkus: yang melayani jamaah adalah
+image Docker di repo ini. Bagian ini menjelaskan cara menjalankannya di VPS
+biasa, untuk siapa pun yang ingin memasang sistem ini di masjidnya sendiri.
+
+> **Belum diuji.** Perintah di bawah diturunkan dari apa yang Coolify kerjakan —
+> bisa ditelusuri sendiri di bagian 2 dan 4. Semuanya perintah Docker standar,
+> tapi penulis dokumen ini tidak menjalankannya langsung. Perlakukan sebagai
+> titik awal yang masuk akal, bukan resep yang sudah terbukti.
+
+### Yang dibutuhkan
+
+| Komponen | Catatan |
+|---|---|
+| Docker Engine 24+ | Beserta plugin `compose` bila memakai berkas compose |
+| MySQL 8 | Boleh container seperti contoh di bawah, boleh layanan terkelola |
+| Nama domain | Hanya bila ingin HTTPS otomatis tanpa proxy di depan |
+| RAM 2 GB | Build sempat memakan lebih banyak daripada saat melayani |
+
+### 1. Ambil kode dan siapkan environment
+
+```bash
+git clone https://github.com/iqbalfhz/masjid.git
+cd masjid
+cp .env.example .env.production
+```
+
+Isi `.env.production` mengikuti daftar di bagian 4.4. Nilai yang wajib
+disesuaikan: `APP_KEY`, `APP_URL`, `APP_TIMEZONE`, kredensial database,
+`SESSION_SECURE_COOKIE=true`, dan `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local`.
+
+`APP_KEY` bisa dibuat tanpa memasang PHP di server, setelah image dibangun:
+
+```bash
+docker run --rm masjid php artisan key:generate --show
+```
+
+> **Jangan pakai tanda kutip di berkas env Docker.** Tulis
+> `APP_NAME=Masjid An-Nur`, bukan `APP_NAME="Masjid An-Nur"` — Docker
+> memperlakukan tanda kutipnya sebagai bagian dari nilai, dan nama masjid akan
+> tampil lengkap dengan tanda kutip di seluruh halaman.
+
+### 2. Bangun image
+
+```bash
+docker build -t masjid .
+```
+
+### 3. Jalankan dengan compose
+
+Simpan sebagai `compose.yaml` di sebelah `Dockerfile`:
+
+```yaml
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env.production
+    ports:
+      # Ganti menjadi "127.0.0.1:8080:80" bila ada proxy atau tunnel di depannya.
+      - "80:80"
+    volumes:
+      - unggahan:/app/storage/app/public
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: masjid_annur
+      MYSQL_USER: masjid
+      MYSQL_PASSWORD: ganti-dengan-password-kuat
+      MYSQL_ROOT_PASSWORD: ganti-juga-yang-ini
+    volumes:
+      - basisdata:/var/lib/mysql
+
+volumes:
+  unggahan:
+  basisdata:
+```
+
+Dengan susunan ini, `DB_HOST` di `.env.production` diisi `db` — nama layanannya,
+bukan `localhost`. Lalu:
+
+```bash
+docker compose up -d
+docker compose logs -f app
+```
+
+Entrypoint menjalankan migrasi dan menyiapkan cache setiap container start, jadi
+tidak ada langkah manual untuk itu.
+
+> **Nama volume menentukan hidup-matinya data.** Bila suatu saat berkas compose
+> ini diubah atau dipindah, pastikan nama volumenya tetap sama. Volume dengan
+> nama berbeda dibuat kosong, dan seluruh unggahan akan tampak lenyap padahal
+> datanya masih ada di volume lama.
+
+### 4. Isi data awal
+
+Sekali saja, setelah container berjalan:
+
+```bash
+docker compose exec app php artisan db:seed --force
+docker compose exec app php artisan shield:generate --all --panel=admin
+docker compose exec app php artisan permission:cache-reset
+docker compose exec app php artisan masjid:sync-prayer-schedules
+```
+
+`db:seed` mencetak password akun pengurus **satu kali** — catat saat itu juga.
+
+### 5. HTTPS
+
+Dua jalur, pilih salah satu:
+
+**Di balik proxy atau tunnel** (nginx, Caddy, Traefik, Cloudflare Tunnel):
+biarkan `SERVER_NAME` apa adanya (`:80`), ikat port ke `127.0.0.1`, dan isi
+`TRUSTED_PROXIES` — tanpa itu aplikasi mengira dirinya diakses lewat HTTP dan
+membangun tautan yang salah (bagian 4.4).
+
+**Tanpa proxy:** tambahkan `SERVER_NAME=masjid.contoh.or.id` ke environment dan
+petakan port 80 dan 443. FrankenPHP menerbitkan sertifikat Let's Encrypt sendiri
+— tidak perlu Certbot. Syaratnya domain sudah mengarah ke server dan port 80
+terbuka, karena dipakai untuk tantangan ACME.
+
+### 6. Pekerjaan terjadwal
+
+Tidak ada Scheduled Task di sini, jadi pakai cron milik host:
+
+```cron
+* * * * * cd /path/ke/proyek && docker compose exec -T app php artisan schedule:run >> /dev/null 2>&1
+```
+
+`-T` penting: tanpa itu cron gagal karena tidak punya terminal. Cara
+memastikannya benar-benar jalan ada di bagian 6.
+
+### 7. Backup
+
+Prinsip dan skripnya sama seperti bagian 10, dengan dua penyesuaian:
+
+- Pada skrip arsip unggahan, ganti filter nama volumenya menjadi `unggahan`
+  (atau nama yang Anda pakai).
+- Database tidak lagi dicadangkan Coolify, jadi jadwalkan sendiri:
+
+  ```cron
+  0 2 * * * cd /path/ke/proyek && docker compose exec -T db mysqldump -u root -p'password-root' masjid_annur | gzip > /backup/db-$(date +\%F).sql.gz
+  ```
+
+Uji restore-nya tetap wajib — prosedurnya di bagian 10.
+
+### 8. Update
+
+```bash
+git pull
+docker compose build
+docker compose up -d
+```
+
+Migrasi dan cache dikerjakan entrypoint saat container baru menyala. Backup
+database dulu bila pembaruannya membawa migrasi.

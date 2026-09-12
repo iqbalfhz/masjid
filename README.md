@@ -1,58 +1,105 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Sistem Informasi Masjid An-Nur
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[![tests](https://github.com/iqbalfhz/masjid/actions/workflows/tests.yml/badge.svg)](https://github.com/iqbalfhz/masjid/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## About Laravel
+Website publik dan panel pengurus untuk Masjid An-Nur, Tangcity Mall — jadwal
+sholat, kajian, laporan keuangan, galeri, layanan jamaah, dan pengelolaannya
+oleh Tim DKM tanpa perlu kemampuan teknis.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Dibangun untuk **dipasang ulang per masjid**, bukan multi-tenant: tidak ada
+nilai khusus An-Nur yang tertanam di kode. Nama, alamat, koordinat, zona waktu,
+rekening donasi, dan identitas lain diatur lewat environment atau menu
+Pengaturan Umum.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Produksi: <https://masjid.iqbalfhz.my.id>
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Dokumentasi
 
-## Learning Laravel
+| Dokumen | Untuk siapa |
+|---|---|
+| [PRD](doks/PRD-Website-Masjid-An-Nur.md) | Apa yang dibangun, untuk siapa, dan mengapa — termasuk keputusan serta improvisasi yang diambil selama pengerjaan |
+| [Tutorial Instalasi Lokal](doks/Tutorial-Instalasi-Lokal.md) | Developer yang menyiapkan lingkungan kerja di mesinnya sendiri |
+| [Panduan Deploy Production](doks/Panduan-Deploy-Production.md) | Orang yang memasang, merawat, mencadangkan, dan memulihkan sistem di server |
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Ketiganya ditulis berbahasa Indonesia dan diperbarui bersamaan dengan kodenya.
+Bila suatu perubahan menyimpang dari rancangan awal, alasannya dicatat di PRD.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Tumpukan teknologi
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+| Lapisan | Teknologi |
+|---|---|
+| Backend | Laravel 13, PHP 8.4 |
+| Panel pengurus | Filament 5 (+ Shield untuk role & permission) |
+| Halaman publik | Blade server-rendered, Tailwind CSS 4, Vite |
+| Database | MySQL 8 |
+| Pencarian | Laravel Scout, driver database |
+| Jadwal sholat | Aladhan API, disinkronkan terjadwal |
+| Pengingat sholat | Web Push (VAPID) + service worker |
+| Runtime produksi | FrankenPHP di dalam Docker, dipasang lewat Coolify, diakses via Cloudflare Tunnel |
 
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Mulai cepat (lokal)
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm run dev
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Langkah lengkapnya — database, Filament Shield, jadwal sholat pertama, Web Push,
+dan scheduler — ada di [Tutorial Instalasi Lokal](doks/Tutorial-Instalasi-Lokal.md).
 
-## Contributing
+## Menjalankan test
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan test --compact
+```
 
-## Code of Conduct
+Test bukan pelengkap di proyek ini: sebagian besar menjaga jebakan yang pernah
+benar-benar terjadi — notifikasi yang mengendap di antrean, tag yang hilang
+diam-diam saat disimpan, skrip yang diblokir Content-Security-Policy, relasi yang
+lupa di-eager load. Penjelasan tiap kasus ada di komentar test-nya.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Struktur singkat
 
-## Security Vulnerabilities
+| Lokasi | Isi |
+|---|---|
+| `app/Filament/` | Panel pengurus: resource, halaman, widget dashboard |
+| `app/Http/Controllers/` | Halaman publik |
+| `app/Services/` | Jadwal sholat dan Web Push |
+| `app/Support/` | Perkakas lintas modul (pengiriman notifikasi langsung, antrean approval) |
+| `resources/views/public/` | Tampilan halaman publik |
+| `docker/` | Caddyfile dan entrypoint image produksi |
+| `doks/` | Dokumentasi |
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Peta yang lebih rinci ada di bagian 18 Tutorial Instalasi Lokal.
 
-## License
+## Memasang untuk masjid Anda
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Sistem ini memang dimaksudkan untuk ditiru. Dua jalur tersedia:
+
+- **Coolify** — jalur yang dipakai instalasi aslinya, lengkap dengan Cloudflare
+  Tunnel, backup berlapis, dan pemberitahuan kegagalan lewat Telegram. Seluruh
+  langkahnya ada di [Panduan Deploy](doks/Panduan-Deploy-Production.md).
+- **Docker biasa di VPS mana pun** — bagian 15 panduan yang sama. Image di repo
+  ini berdiri sendiri; Coolify hanya pembungkusnya.
+
+Yang perlu diubah untuk masjid lain hanya environment dan menu Pengaturan Umum:
+nama, alamat, koordinat, zona waktu, rekening donasi, dan kunci VAPID baru.
+Rinciannya di bagian 11 Panduan Deploy.
+
+## Lisensi
+
+Kode sistem ini dirilis di bawah [Lisensi MIT](LICENSE) — bebas dipakai, diubah,
+dan dipasang untuk masjid lain, selama pemberitahuan hak ciptanya disertakan.
+
+Aset pihak ketiga yang ikut dibundel: font **Instrument Sans** di bawah
+[SIL Open Font License 1.1](https://openfontlicense.org) — keterangannya di
+`resources/fonts/README.md`. Jadwal sholat diambil dari
+[Aladhan API](https://aladhan.com/prayer-times-api).
+
+Konten masjid — foto, logo, artikel, dan data keuangan — **tidak** termasuk
+dalam lisensi ini. Yang dibagikan adalah perangkat lunaknya, bukan isinya.

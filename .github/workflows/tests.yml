@@ -1,0 +1,62 @@
+name: tests
+
+# Dijalankan pada setiap push ke main dan setiap pull request. Tujuannya bukan
+# sekadar lencana hijau: sebagian besar test di repo ini menjaga jebakan yang
+# pernah benar-benar terjadi di produksi, jadi kegagalannya patut menghentikan
+# deploy sebelum sampai ke jamaah.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pest:
+    name: Pest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ambil kode
+        uses: actions/checkout@v4
+
+      - name: Siapkan PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          # intl dituntut filament/support, zip oleh openspout (export XLSX),
+          # sqlite3 karena test memakai basis data in-memory.
+          extensions: intl, zip, sqlite3, pdo_sqlite, mbstring, fileinfo, bcmath
+          coverage: none
+
+      # Disalin sebelum composer install: skrip post-autoload-dump menjalankan
+      # artisan, dan artisan membaca .env.
+      - name: Siapkan environment
+        run: cp .env.example .env
+
+      - name: Pasang dependency PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Buat APP_KEY
+        run: php artisan key:generate
+
+      - name: Siapkan Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Halaman publik memuat aset lewat @vite, yang membaca
+      # public/build/manifest.json. Tanpa langkah ini seluruh test halaman
+      # publik gagal dengan "Unable to locate file in Vite manifest".
+      - name: Bangun aset frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Basis datanya SQLite in-memory (lihat phpunit.xml), jadi tidak ada
+      # layanan MySQL yang perlu dinyalakan di sini.
+      - name: Jalankan test
+        run: php artisan test --compact
+
+      - name: Periksa gaya kode
+        run: vendor/bin/pint --test

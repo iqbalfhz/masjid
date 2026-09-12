@@ -833,6 +833,8 @@ Buka halaman Peminjaman Fasilitas → pilih fasilitas & lihat kalender ketersedi
 7. Ditambahkan role **Admin (Pengurus Masjid)** di atas Ketua DKM: Superadmin (Iqbal, developer) punya akses penuh termasuk pengaturan teknis sistem; Admin punya akses penuh ke seluruh modul operasional masjid tapi tanpa akses konfigurasi level sistem.
 8. Dokumentasi instalasi (lokal untuk development di Fase 1, dan production/deploy di Fase 4) menjadi deliverable wajib, ditulis paralel selama pengembangan agar mendukung tujuan reusable codebase.
 9. Ditambahkan modul **Notifikasi Internal (in-app)** untuk semua alur approval dan interaksi jamaah (moderasi testimoni, kotak saran, pendaftaran kurban/zakat, peminjaman fasilitas) — dibangun bertahap mengikuti fase modul terkait, dimulai dari Fase 1. Notifikasi email/WhatsApp otomatis tetap di Fase 5 (di luar scope awal).
+10. Repositori dijadikan **publik dengan Lisensi MIT** agar masjid lain bisa meniru instalasinya. Konsekuensinya dokumentasi ditulis untuk pembaca asing, bukan hanya untuk pengembang aslinya: `README.md` sebagai pintu masuk, jalur deploy tanpa Coolify (Panduan Deploy bagian 15), peta kode (Tutorial Instalasi Lokal bagian 18), dan berkas `LICENSE`. Konten masjid — foto, logo, artikel, data keuangan — tidak termasuk dalam lisensi tersebut.
+11. Test dijalankan otomatis di **GitHub Actions** pada tiap push dan pull request, beserta pemeriksaan gaya kode Pint. Basis datanya SQLite in-memory, sehingga CI tidak memerlukan layanan MySQL.
 
 ---
 
