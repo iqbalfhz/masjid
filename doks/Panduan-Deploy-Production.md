@@ -251,6 +251,7 @@ SESSION_SECURE_COOKIE=true
 CACHE_STORE=database
 QUEUE_CONNECTION=database
 FILESYSTEM_DISK=public
+LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local
 
 PRAYER_API_PROVIDER=aladhan
 PRAYER_API_LATITUDE=-6.178306
@@ -298,6 +299,12 @@ atau `Asia/Jayapura` (WIT).
 
 **`SESSION_SECURE_COOKIE=true`.** Cookie login hanya dikirim lewat HTTPS. Aman
 karena seluruh lalu lintas publik datang lewat Cloudflare.
+
+**`LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local`.** Berkas yang sedang diunggah
+disimpan sementara sebelum disimpan permanen. Bawaannya mengikuti disk default
+— yaitu `public` — sehingga berkas itu sempat bisa diakses siapa pun lewat
+`/storage/livewire-tmp/…`, dan ikut terbawa ke setiap arsip backup. Pratinjau
+unggahan tetap bekerja: Livewire menyajikannya lewat rute bertanda tangan.
 
 Koordinat dan metode hisab juga bisa diubah belakangan lewat **Pengaturan Umum**
 di admin panel, tanpa menyentuh environment.
@@ -559,21 +566,190 @@ entrypoint menjalankan migrasi dan cache setiap container start.
 **Backup** — dua hal yang tidak bisa dibuat ulang: isi database dan berkas
 unggahan. Kodenya selalu bisa di-clone lagi.
 
-- **Database:** resource MySQL → **Backups** → jadwalkan backup harian.
-- **Berkas unggahan:** arsipkan isi volume dari server, misalnya lewat cron
-  milik host:
+### Database — lewat Coolify
 
-  ```cron
-  0 2 * * * tar -czf /backup/storage-$(date +\%F).tar.gz -C /var/lib/docker/volumes/<uuid-aplikasi>-masjid-storage/_data .
-  ```
+Resource MySQL → tab **Backups** → tambahkan jadwal:
 
-- **Seluruh VM:** backup Proxmox (vzdump) mencakup keduanya sekaligus.
-- **`APP_KEY` dan kunci VAPID:** simpan salinannya di luar server. Tanpa
-  `APP_KEY` yang sama, database hasil restore tidak bisa membaca data
-  terenkripsinya.
+| Field | Nilai |
+|---|---|
+| Frequency | `0 2 * * *` (harian, pukul 02.00) |
+| Number of backups to keep | 14 |
+| Save to S3 | opsional, tapi inilah yang membuat backup selamat dari matinya server |
 
-> Backup yang belum pernah dicoba dipulihkan belum tentu backup. Uji restore ke
-> database kosong sekali waktu.
+Klik **Backup Now** sekali untuk membuktikan jadwalnya bekerja; entri yang
+berhasil muncul di daftar beserta ukurannya.
+
+> **Jadwal ini dibaca sebagai UTC.** Kolom **Timezone** pada form backup tidak
+> bisa diisi di Coolify 4.1.2, dan setelan *Instance Timezone* tidak
+> memengaruhinya. Jadi `0 2 * * *` berarti 02.00 UTC — 09.00 WIB. Dibiarkan
+> begitu tidak masalah: dump-nya beberapa ratus kilobyte dan selesai dalam
+> hitungan detik, jadi jam pelaksanaannya tidak berpengaruh pada apa pun. Bila
+> tetap ingin dini hari waktu Indonesia, isi Frequency `0 19 * * *`
+> (19.00 UTC = 02.00 WIB keesokan harinya).
+>
+> Dua backup lainnya tidak terpengaruh: cron host dan jadwal Proxmox memakai jam
+> mesin, yang sudah WIB.
+
+### Berkas unggahan — skrip di host
+
+Coolify tidak mencadangkan volume. Simpan skrip berikut sebagai
+`/usr/local/bin/backup-masjid.sh`, lalu `chmod +x`:
+
+> Tidak perlu SSH: menu **Terminal** di Coolify bisa dipakai, asalkan yang
+> dipilih **server**-nya, bukan container aplikasi. Skrip ini memanggil `docker`
+> dan membaca lokasi volume di host — keduanya tidak ada di dalam container.
+
+```sh
+#!/bin/sh
+set -eu
+
+# Arsip berkas unggahan Masjid An-Nur (isi volume masjid-storage).
+# Mengabari lewat Telegram hanya bila gagal — keberhasilan tidak dilaporkan
+# supaya pesannya tidak berubah jadi kebisingan yang diabaikan.
+
+TUJUAN=/backup/masjid
+SIMPAN_HARI=14
+MIN_BYTE=102400            # arsip di bawah 100 KB dianggap mencurigakan
+KONFIG=/etc/masjid-backup.env
+
+kabari() {
+    [ -f "$KONFIG" ] || return 0
+    . "$KONFIG"
+    [ -n "${TELEGRAM_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ] || return 0
+    curl -sS --max-time 20 -o /dev/null \
+        -d "chat_id=${TELEGRAM_CHAT_ID}" \
+        --data-urlencode "text=$1" \
+        "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" || true
+}
+
+gagal() {
+    echo "GAGAL: $1" >&2
+    kabari "Backup berkas unggahan masjid GAGAL di $(hostname): $1"
+    exit 1
+}
+
+VOLUME=$(docker volume ls --quiet --filter name=masjid-storage | head -1) || gagal "docker tidak bisa dijalankan"
+[ -n "$VOLUME" ] || gagal "volume masjid-storage tidak ditemukan"
+
+SUMBER=$(docker volume inspect "$VOLUME" --format '{{ .Mountpoint }}') || gagal "lokasi volume tidak terbaca"
+
+mkdir -p "$TUJUAN" || gagal "folder $TUJUAN tidak bisa dibuat"
+ARSIP="$TUJUAN/storage-$(date +%F).tar.gz"
+
+tar -czf "$ARSIP" -C "$SUMBER" . || gagal "tar gagal membuat arsip (disk penuh?)"
+
+UKURAN=$(stat -c %s "$ARSIP")
+[ "$UKURAN" -ge "$MIN_BYTE" ] || gagal "arsip hanya $UKURAN byte, jauh lebih kecil dari biasanya"
+
+find "$TUJUAN" -name 'storage-*.tar.gz' -mtime +$SIMPAN_HARI -delete
+
+echo "OK: $ARSIP ($UKURAN byte)"
+```
+
+Nama volumenya dicari otomatis karena Coolify memberinya awalan ID aplikasi
+(`<uuid>-masjid-storage`) yang berubah bila aplikasinya dibuat ulang.
+
+Kredensial Telegram disimpan terpisah supaya skripnya aman disalin ke mana pun:
+
+```bash
+cat > /etc/masjid-backup.env <<'EOF'
+TELEGRAM_TOKEN=token-bot-anda
+TELEGRAM_CHAT_ID=chat-id-anda
+EOF
+
+chmod 600 /etc/masjid-backup.env
+```
+
+Tanpa berkas itu skripnya tetap berjalan, hanya tidak mengabari siapa pun.
+
+```cron
+15 2 * * * /usr/local/bin/backup-masjid.sh >> /var/log/backup-masjid.log 2>&1
+```
+
+### Bawa keluar dari server
+
+Backup yang tersimpan di disk yang sama dengan sumbernya hanya melindungi dari
+kesalahan manusia, bukan dari matinya server. Pilih salah satu: backup VM
+Proxmox (vzdump) yang mencakup keduanya sekaligus, S3 pada backup database, atau
+salin `/backup` ke mesin lain secara berkala.
+
+**Backup VM di Proxmox** (Datacenter → Backup): pilih hanya VM Coolify,
+Mode `Snapshot`, kompresi `ZSTD`, jadwal `03:00`, retensi `keep-daily=7`
+ditambah `keep-weekly=4`. Pastikan QEMU Guest Agent terpasang di dalam VM —
+lognya akan menyebut `fs-freeze`, tanda sistem berkas dibekukan sesaat
+sehingga hasilnya jauh lebih rapi daripada sekadar salinan mentah.
+
+Ukuran sebenarnya, diukur 12 September 2026: boot disk 1 TB yang 94% kosong
+menghasilkan arsip **16,81 GB dalam 36 menit**. Dengan retensi di atas,
+kebutuhan puncaknya sekitar 185 GB.
+
+### Pemberitahuan saat gagal
+
+Backup yang gagal tanpa suara sama saja dengan tidak punya backup. Ketiga
+lapisan dihubungkan ke satu bot Telegram, dan **hanya kegagalan yang dikirim** —
+laporan sukses harian hanya membuat pesannya berhenti dibaca.
+
+| Lapisan | Jalur pemberitahuan |
+|---|---|
+| Database | Coolify → **Notifications → Telegram**: centang *Backup Failure*, *Deployment Failure*, *Scheduled Task Failure* |
+| Berkas unggahan | Skrip di atas membacanya dari `/etc/masjid-backup.env` dan mengirim sendiri |
+| VM | Proxmox → **Datacenter → Notifications**: target **Webhook** ke API Telegram, plus matcher severity `error, warning` |
+
+Isi target webhook Proxmox:
+
+| Field | Nilai |
+|---|---|
+| Method/URL | `POST` — `https://api.telegram.org/bot{{ secrets.token }}/sendMessage` |
+| Headers | `Content-Type` = `application/json` |
+| Body | `{"chat_id":"<chat id>","text":"{{ escape title }}\n\n{{ escape message }}"}` |
+| Secrets | `token` = token bot |
+
+Token ditaruh di bagian **Secrets**, bukan langsung di URL, supaya tidak terbaca
+lagi setelah tersimpan. `{{ escape … }}` mencegah tanda kutip di dalam pesan
+Proxmox merusak struktur JSON-nya.
+
+Matcher-nya dibuat terpisah (`telegram-gagal`) dengan aturan **Match Severity:
+error, warning**, dan pada tab *Targets to notify* centang target `telegram`.
+Tanpa matcher, target yang sudah benar pun tidak menerima apa-apa.
+
+**Uji jalur gagalnya, bukan hanya jalur suksesnya.** Untuk skrip unggahan,
+jalankan salinannya dengan ambang ukuran yang mustahil dipenuhi — skrip aslinya
+tidak tersentuh:
+
+```bash
+sed 's/^MIN_BYTE=.*/MIN_BYTE=999999999/' /usr/local/bin/backup-masjid.sh | sh
+```
+
+Pesan kegagalan harus masuk ke Telegram dalam hitungan detik. Untuk Proxmox,
+tombol **Test** pada target webhook melakukan hal yang sama.
+### Kunci yang ikut menentukan
+
+`APP_KEY` dan kunci VAPID disimpan sebagai environment variable, bukan di dalam
+database maupun volume — jadi keduanya **tidak ikut tercadangkan**. Simpan
+salinannya di pengelola kata sandi. Tanpa `APP_KEY` yang sama, database hasil
+restore tidak bisa membaca data terenkripsinya; tanpa kunci VAPID yang sama,
+seluruh langganan pengingat sholat harus didaftarkan ulang.
+
+### Uji restore
+
+> Backup yang belum pernah dicoba dipulihkan belum tentu backup.
+
+Database — pulihkan ke database uji, bukan ke database produksi:
+
+```bash
+docker exec -i <container-mysql> mysql -uroot -p'<root-password>' -e 'CREATE DATABASE uji_restore;'
+gunzip -c <berkas-backup>.sql.gz | docker exec -i <container-mysql> mysql -uroot -p'<root-password>' uji_restore
+docker exec -i <container-mysql> mysql -uroot -p'<root-password>' -e 'SELECT COUNT(*) FROM uji_restore.users;'
+docker exec -i <container-mysql> mysql -uroot -p'<root-password>' -e 'DROP DATABASE uji_restore;'
+```
+
+Berkas unggahan — periksa isinya dulu, baru pulihkan bila memang perlu:
+
+```bash
+tar -tzf /backup/masjid/storage-<tanggal>.tar.gz | head
+docker run --rm -v <nama-volume>:/data -v /backup/masjid:/backup alpine \
+    sh -c 'tar -xzf /backup/storage-<tanggal>.tar.gz -C /data'
+```
 
 **Rollback:** Coolify menyimpan image dari deploy sebelumnya, dan menu
 **Rollback** bisa menyalakannya kembali. Migrasi database **tidak** ikut mundur —
@@ -704,6 +880,7 @@ menggantinya lagi lewat halaman **Profil**.
 - [ ] `APP_DEBUG=false` dan `APP_ENV=production`
 - [ ] `APP_KEY` terisi dan salinannya tersimpan di luar server
 - [ ] `SESSION_SECURE_COOKIE=true`
+- [ ] `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local` — berkas unggahan sementara tidak publik
 - [ ] Port aplikasi terikat ke `127.0.0.1` — cek dengan `docker ps` (bagian 9 poin 14)
 - [ ] MySQL: Ports Mappings kosong, *Make it publicly available* tidak dicentang
 - [ ] Password akun dummy sudah diganti atau akunnya dihapus

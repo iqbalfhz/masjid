@@ -437,8 +437,29 @@ Dua target di atas sudah diukur, bukan diperkirakan.
 | Laporan keuangan | 12 | 48 ms |
 | Galeri | 6 | 13 ms |
 
-Jauh di bawah target 2 detik, tanpa gejala N+1. Angka ini akan berbeda di server
-produksi, jadi perlu diukur ulang setelah deploy.
+Jauh di bawah target 2 detik, tanpa gejala N+1.
+
+**Diukur ulang di produksi** (12 September 2026, dari jaringan pengguna lewat
+Cloudflare Tunnel; tiga kali per halaman, diambil yang tercepat):
+
+| Halaman | Sambung | Byte pertama | Total |
+|---|---|---|---|
+| Beranda | 25 ms | 494 ms | 497 ms |
+| Jadwal sholat | 33 ms | 841 ms | 1025 ms |
+| Artikel | 25 ms | 1030 ms | 1030 ms |
+| Laporan keuangan | 24 ms | 347 ms | 348 ms |
+| Galeri | 23 ms | 291 ms | 291 ms |
+| Kajian | 20 ms | 314 ms | 314 ms |
+| Profil | 20 ms | 322 ms | 322 ms |
+| Kontak | 21 ms | 280 ms | 281 ms |
+
+Target terpenuhi dengan jarak lebar; yang paling lambat pun separuh target.
+Waktu sambung 20–33 ms menunjukkan Cloudflare menjawab dari lokasi terdekat,
+sehingga sisanya adalah waktu tunnel ditambah aplikasi.
+
+Dua halaman menonjol dibanding sisanya: **jadwal sholat** dan **artikel**, sekitar
+1 detik sementara halaman lain di bawah 350 ms. Belum mengganggu, tapi keduanya
+kandidat pertama untuk diperiksa bila isinya bertambah banyak.
 
 **Responsif — terpenuhi setelah perbaikan.** Diuji pada 10 lebar viewport
 (280–1440 px, mencakup layar luar Galaxy Fold sampai desktop) di seluruh 18
@@ -506,6 +527,7 @@ environment server lalu restart, tanpa mengubah kode.
 | Aplikasi di belakang proxy (Cloudflare Tunnel) tidak mengenali HTTPS | HSTS tidak terkirim; tautan yang dibangun dari request memakai `http://` | `trustProxies` di `bootstrap/app.php`, env `TRUSTED_PROXIES`; `DiBelakangProxyTest` |
 | `tags` tidak ada di `$fillable` Article, Event, GalleryAlbum, Study | Di produksi tag hilang diam-diam; di lokal menyimpan galeri berakhir `MassAssignmentException` | Ditambahkan ke `#[Fillable]`; `TagLintasModulTest` |
 | Kolom Role di Manajemen User tanpa eager load | N+1 query di produksi; error 500 di lokal begitu ada lebih dari satu akun | `modifyQueryUsing(... with('roles'))`; `AdminPanelAccessTest` |
+| Berkas unggahan sementara Livewire memakai disk `public` | Berkas yang sedang diunggah sempat bisa diakses lewat `/storage/livewire-tmp/…`, dan ikut masuk arsip backup | `LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK=local` |
 | `composer audit` dan `npm audit` | Nol kerentanan diketahui | — |
 
 **Diverifikasi di browser sungguhan**, bukan hanya lewat test: Chromium headless
