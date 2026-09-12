@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MosqueSetting;
 use App\Models\PrayerSchedule;
 use App\Models\PushSubscription;
 use App\Services\PrayerScheduleService;
@@ -192,4 +193,41 @@ it('menghitung waktu berikutnya dari jam dinding lokal, bukan offset UTC', funct
     $this->travelTo(Carbon::parse('2026-09-10 16:00:00', 'Asia/Jakarta'));
 
     expect(app(PrayerScheduleService::class)->nextPrayer()['key'])->toBe('maghrib');
+});
+
+it('memakai jeda pengingat dari Pengaturan sebagai pilihan bawaan di halaman publik', function (): void {
+    // Isian "Jeda pengingat bawaan" sempat tidak berpengaruh sama sekali:
+    // halaman ini selalu memilih 10 menit, berapa pun yang diisi pengurus.
+    MosqueSetting::current()->update([
+        'prayer_reminder_settings' => ['enabled' => true, 'prayers' => ['fajr'], 'minutes_before' => 20],
+    ]);
+
+    $this->get('/jadwal-sholat')
+        ->assertSuccessful()
+        ->assertSee('value="20" selected>20 menit', false);
+});
+
+it('memakai jeda dari Pengaturan ketika jamaah tidak memilih sendiri', function (): void {
+    MosqueSetting::current()->update([
+        'prayer_reminder_settings' => ['enabled' => true, 'minutes_before' => 25],
+    ]);
+
+    $this->postJson('/push/langganan', [
+        'endpoint' => 'https://push.example.com/langganan/abc123',
+        'keys' => ['p256dh' => 'kunci', 'auth' => 'token'],
+    ])->assertSuccessful();
+
+    expect(PushSubscription::query()->firstOrFail()->minutes_before)->toBe(25);
+});
+
+it('menyertakan ikon pada isi notifikasi', function (): void {
+    // Tanpa ikon, notifikasi tampil memakai ikon bawaan browser — tidak ada
+    // tanda bahwa pesannya datang dari masjid.
+    PrayerSchedule::factory()->create(['date' => today()]);
+
+    $this->travelTo(today()->setTime(17, 55));
+
+    $this->getJson('/push/konten')
+        ->assertSuccessful()
+        ->assertJsonPath('icon', asset('images/icon-192.png'));
 });

@@ -21,6 +21,7 @@ use App\Http\Controllers\StudyController;
 use App\Http\Controllers\SuggestionController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\WebManifestController;
 use App\Http\Controllers\ZakatRegistrationController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', HomeController::class)->name('home');
+
+/*
+ * Manifest web app, dipasang di <head> layout publik. Di iPhone berkas inilah
+ * yang memungkinkan situs dipasang ke Layar Utama — satu-satunya cara Safari
+ * mengizinkan Web Push, sehingga pengingat sholat bisa diaktifkan di sana.
+ */
+Route::get('/site.webmanifest', WebManifestController::class)->name('site.webmanifest');
 
 Route::get('/jadwal-sholat', PrayerScheduleController::class)->name('jadwal-sholat');
 

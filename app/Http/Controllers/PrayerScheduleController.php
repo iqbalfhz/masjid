@@ -33,6 +33,12 @@ class PrayerScheduleController extends Controller
             'nextPrayer' => $prayers->nextPrayer(),
             'reminderEnabled' => (bool) ($reminder['enabled'] ?? false),
             'reminderPrayers' => $reminder['prayers'] ?? array_keys(PrayerSchedule::REMINDABLE),
+            /*
+             * Jeda bawaan mengikuti Pengaturan Umum. Sebelumnya isian itu tidak
+             * dipakai di mana pun: pengurus bisa mengubahnya tanpa efek apa pun,
+             * karena halaman ini selalu memilih 10 menit.
+             */
+            'reminderMinutes' => (int) ($reminder['minutes_before'] ?? config('masjid.push.default_minutes_before')),
         ]);
     }
 }

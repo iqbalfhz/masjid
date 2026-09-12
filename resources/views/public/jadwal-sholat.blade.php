@@ -132,10 +132,15 @@
 
                     <div class="mt-4">
                         <label for="push-minutes" class="block text-sm font-medium text-masjid-800">Ingatkan berapa menit sebelumnya</label>
+                        @php
+                            // Pilihan bawaan diambil dari Pengaturan Umum. Bila nilainya
+                            // di luar daftar, ia ikut ditawarkan supaya tetap terpilih.
+                            $pilihanMenit = collect([5, 10, 15, 30])->push($reminderMinutes)->unique()->sort()->values();
+                        @endphp
                         <select id="push-minutes" data-push-minutes
                                 class="mt-1 w-full rounded-lg border border-masjid-200 px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-masjid-400">
-                            @foreach ([5, 10, 15, 30] as $minutes)
-                                <option value="{{ $minutes }}" @selected($minutes === 10)>{{ $minutes }} menit</option>
+                            @foreach ($pilihanMenit as $minutes)
+                                <option value="{{ $minutes }}" @selected($minutes === $reminderMinutes)>{{ $minutes }} menit</option>
                             @endforeach
                         </select>
                     </div>

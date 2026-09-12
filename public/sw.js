@@ -24,10 +24,14 @@ self.addEventListener('push', (event) => {
                     url: '/jadwal-sholat',
                 };
 
+                // Ikon mengikuti logo masjid bila pengurus sudah mengunggahnya
+                // (dikirim server lewat /push/konten). Cadangannya ikon bawaan
+                // aplikasi — berkas yang dirujuk versi sebelumnya tidak pernah
+                // ada, sehingga notifikasi tampil dengan ikon bawaan browser.
                 return self.registration.showNotification(isi.title, {
                     body: isi.body,
-                    icon: '/images/icon-notifikasi.png',
-                    badge: '/images/icon-notifikasi.png',
+                    icon: isi.icon || '/images/icon-192.png',
+                    badge: '/images/badge-72.png',
                     tag: 'pengingat-sholat',
                     renotify: true,
                     data: { url: isi.url || '/jadwal-sholat' },

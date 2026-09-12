@@ -350,4 +350,23 @@ if (tombolReminder && 'serviceWorker' in navigator && 'PushManager' in window) {
         .then((registration) => registration?.pushManager.getSubscription())
         .then((subscription) => perbaruiTampilan(Boolean(subscription)))
         .catch(() => perbaruiTampilan(false));
+} else if (tombolReminder) {
+    /*
+     * Browser tanpa Web Push. Yang paling sering ditemui jamaah: Safari di
+     * iPhone, yang hanya membuka Web Push untuk situs yang sudah dipasang ke
+     * Layar Utama. Tanpa cabang ini tombolnya diam saja tanpa penjelasan.
+     */
+    const status = document.querySelector('[data-push-status]');
+    const iOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    tombolReminder.disabled = true;
+
+    if (status) {
+        status.dataset.jenis = 'warning';
+        status.textContent = iOS
+            ? 'Di iPhone, pasang dulu situs ini ke Layar Utama: ketuk tombol Bagikan di Safari, pilih "Tambahkan ke Layar Utama", lalu buka lewat ikonnya. Setelah itu pengingat bisa diaktifkan.'
+            : 'Browser ini belum mendukung pengingat sholat. Coba Chrome di Android, atau Safari iOS 16.4+ lewat ikon di Layar Utama.';
+    }
 }

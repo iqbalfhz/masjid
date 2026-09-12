@@ -260,7 +260,8 @@ composer run dev
 
 ### Menguji dengan FrankenPHP
 
-Production memakai **FrankenPHP** (lihat `Panduan-Deploy-Production.md` bagian 6).
+Production memakai **FrankenPHP** di dalam container Docker (lihat
+`Panduan-Deploy-Production.md` bagian 2).
 Perbedaan server bisa memunculkan masalah yang tidak terlihat di
 `php artisan serve` — terutama soal ekstensi PHP dan batas ukuran unggahan.
 Untuk menguji setara production secara lokal:
@@ -323,10 +324,18 @@ fitur diam-diam berhenti bekerja setiap kali worker mati:
 
 ### Memastikan scheduler benar-benar hidup
 
-Buka **Dashboard** dan lihat kartu **Kesehatan Sistem**. Kartu "Jadwal sholat
-tersedia" menunjukkan berapa hari ke depan jadwal masih ada. Bila angkanya
-menyusut mendekati nol atau tertulis "Habis", berarti
-`masjid:sync-prayer-schedules` tidak pernah jalan.
+Jalankan `php artisan schedule:list` — kedua perintah di atas harus terdaftar.
+Terminal `schedule:work` sendiri menjadi buktinya: tiap menit muncul baris
+`masjid:send-prayer-reminders`.
+
+> Kartu **Kesehatan Sistem → Jadwal sholat tersedia** di Dashboard **bukan**
+> bukti scheduler hidup. Sinkronisasi mengambil bulan ini ditambah dua bulan ke
+> depan (`PRAYER_API_SYNC_MONTHS=2`), jadi satu kali jalan — termasuk yang
+> manual — sudah menghasilkan angka seperti "79 hari lagi". Angka itu berkurang
+> satu setiap hari walaupun scheduler sehat, dan baru melonjak sekitar 30 hari
+> tiap tanggal 1 setelah pukul 01:30. Scheduler yang mati paling cepat terlihat
+> di sini pada awal bulan berikutnya. Di server, buktinya ada di riwayat
+> eksekusi Scheduled Task Coolify (Panduan Deploy bagian 6).
 
 ---
 

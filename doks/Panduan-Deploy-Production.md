@@ -5,123 +5,251 @@ Dokumen ini memenuhi PRD bagian 13 poin 8 (*dokumentasi deploy sebagai deliverab
 wajib*). Ditujukan untuk orang yang memasang sistem ini ke server — bukan untuk
 Tim DKM yang memakainya sehari-hari.
 
+Panduan ini mengikuti instalasi yang benar-benar berjalan di
+`https://masjid.iqbalfhz.my.id`: **Coolify** di server sendiri, aplikasi dibangun
+dari `Dockerfile` di repo, dan diakses publik lewat **Cloudflare Tunnel**.
+
+```
+Pengunjung ──HTTPS──▶ Cloudflare ──tunnel──▶ cloudflared (di server, network host)
+                                                   │ HTTP
+                                                   ▼
+                                 127.0.0.1:8087 ──▶ container aplikasi :80 (FrankenPHP)
+                                                        ├──▶ MySQL (resource Coolify, jaringan internal)
+                                                        └──▶ volume masjid-storage (berkas unggahan)
+```
+
 Kodebase ini dirancang untuk **dipasang ulang per masjid**, bukan multi-tenant
-(PRD bagian 13). Jadi satu masjid = satu instalasi + satu database. Bagian 11
+(PRD bagian 13). Satu masjid = satu aplikasi + satu database. Bagian 11
 menjelaskan cara memasangnya untuk masjid kedua.
 
 ---
 
-## 1. Kebutuhan Server
+## 1. Gambaran Arsitektur
 
-| Komponen | Minimal | Catatan |
+| Komponen | Wujudnya | Catatan |
 |---|---|---|
-| PHP | 8.3 (diuji di 8.4) | `composer.json` menuntut `^8.3` |
-| MySQL | 8.0 | MariaDB 10.6+ juga jalan |
-| Web server | **FrankenPHP** | Berbasis Caddy, PHP tertanam. Menggantikan Nginx + PHP-FPM + Certbot sekaligus |
-| Composer | 2.x | |
-| Node.js | 20+ | Hanya untuk build aset; tidak perlu ada saat runtime |
-| Disk | ~1 GB + ruang upload | Galeri dan e-library tumbuh seiring waktu |
-| RAM | 1 GB | VPS kecil cukup (PRD bagian 6) |
+| Server | VM Ubuntu di Proxmox, menjalankan Coolify | |
+| Aplikasi | Satu container dari `Dockerfile` repo | FrankenPHP + PHP 8.4. Build pack **Dockerfile**, bukan Nixpacks |
+| Database | Resource MySQL terpisah di Coolify | Terhubung lewat jaringan internal Docker, tidak dibuka ke luar |
+| Berkas unggahan | Volume `masjid-storage` | Satu-satunya data aplikasi yang harus bertahan melewati redeploy |
+| HTTPS & domain | Cloudflare Tunnel | Tidak ada port server yang dibuka ke internet |
+| Pekerjaan terjadwal | Scheduled Task Coolify | Pengganti cron |
+| Deploy | Webhook GitHub → Coolify | Setiap push ke `main` langsung menjadi deploy produksi |
 
-> **PHP muncul dua kali, dan itu disengaja.** FrankenPHP membawa PHP-nya sendiri
-> untuk melayani request. Tapi Composer, Artisan, dan scheduler cron berjalan di
-> baris perintah — dan itu butuh PHP CLI. Anda punya dua pilihan:
->
-> 1. Pasang PHP CLI sistem juga (`php8.3-cli` beserta ekstensinya), lalu pakai
->    `php artisan ...` seperti biasa; atau
-> 2. Tidak memasang PHP sistem sama sekali, dan memakai PHP bawaan FrankenPHP
->    lewat `frankenphp php-cli artisan ...` di **setiap** perintah — termasuk di
->    dalam cron.
->
-> Panduan ini memakai `php artisan` (pilihan 1). Bila Anda memilih 2, ganti
-> setiap `php artisan` menjadi `frankenphp php-cli artisan`. Yang berbahaya
-> adalah mencampur keduanya: versi dan daftar ekstensi PHP sistem bisa berbeda
-> dari milik FrankenPHP, sehingga perintah berhasil di terminal tapi gagal saat
-> melayani request — atau sebaliknya.
+Yang **sengaja tidak ada**, beserta alasannya:
 
-**Ekstensi PHP** (diambil dari `require` dependency yang benar-benar terpasang,
-bukan daftar umum):
-
-`ctype`, `curl`, `dom`, `fileinfo`, `filter`, `hash`, `iconv`, `intl`, `json`,
-`libxml`, `mbstring`, `openssl`, `pcre`, `pdo`, `pdo_mysql`, `session`,
-`tokenizer`, `xmlreader`, `zip`.
-
-Tiga yang paling sering belum aktif di hosting, padahal wajib:
-
-| Ekstensi | Dibutuhkan oleh | Kalau tidak ada |
-|---|---|---|
-| `intl` | `filament/support` | Admin panel gagal dimuat sama sekali |
-| `zip` + `xmlreader` | `openspout` | Export rekap format XLSX gagal |
-| `openssl` | Laravel | `masjid:vapid-keys` gagal, Web Push tidak bisa disiapkan |
-
-> `gd` **tidak** diperlukan: tidak ada dependency yang menuntutnya, dan aplikasi
-> ini tidak melakukan pengolahan gambar di sisi server — berkas unggahan
-> disimpan apa adanya.
-
-Cek cepat di server:
-
-```bash
-php -v
-php -m | tr '\n' ' '
-mysql --version
-composer --version
-```
-
-Verifikasi ekstensi wajib sekaligus:
-
-```bash
-php -r 'foreach (["ctype","curl","dom","fileinfo","filter","hash","iconv","intl","json","libxml","mbstring","openssl","pcre","pdo_mysql","session","tokenizer","xmlreader","zip"] as $e) { printf("%-12s %s\n", $e, extension_loaded($e) ? "ok" : "HILANG"); }'
-```
+- **Redis.** Cache dan session memakai database. Untuk skala satu masjid,
+  menambah Redis berarti satu layanan lagi yang bisa mati tanpa keuntungan
+  berarti.
+- **Queue worker.** Tidak ada pekerjaan yang diantrekan — lihat bagian 6.
+- **docker-compose.** Satu container ditambah resource MySQL Coolify sudah
+  cukup. Compose menambah satu jebakan nyata: nama volume di berkas compose
+  harus persis sama dengan volume yang sudah ada, kalau tidak Coolify membuat
+  volume **baru yang kosong** dan seluruh unggahan tampak hilang.
+- **Nginx, PHP-FPM, Certbot.** FrankenPHP melayani PHP langsung, sedangkan TLS
+  diselesaikan Cloudflare.
 
 ---
 
-## 2. Menyiapkan Berkas
+## 2. Isi Image
 
-```bash
-cd /var/www
-git clone <url-repository> masjid
-cd masjid
+Semua persiapan sudah tertulis di `Dockerfile`, `docker/Caddyfile`, dan
+`docker/entrypoint.sh`. Bagian ini menjelaskan isinya supaya tidak ada yang
+dikerjakan ulang secara manual.
 
-composer install --no-dev --optimize-autoloader
-```
+### Tahap build
 
-> `--no-dev` penting: paket development (Pest, Faker) tidak perlu ada di server
-> dan hanya memperbesar permukaan yang harus diamankan.
+| Tahap | Isi |
+|---|---|
+| `aset` | `node:22-alpine` — `npm ci` lalu `npm run build`. Node tidak ikut ke image akhir |
+| `basis` | `dunglas/frankenphp:php8.4-bookworm` + ekstensi `intl`, `zip`, `pdo_mysql`, `opcache` + Composer |
+| `vendor` | `composer install --no-dev` memakai PHP yang sama dengan runtime |
+| runtime | Kode aplikasi, `vendor/`, `public/build`, Caddyfile, entrypoint |
 
-Build aset. Boleh dilakukan di mesin lokal lalu kirim folder `public/build`,
-kalau server tidak punya Node:
+Dua keputusan di sini lahir dari build yang pernah gagal:
 
-```bash
-npm ci
-npm run build
-```
+- **Composer dijalankan di atas image FrankenPHP, bukan image `composer:2`.**
+  PHP di image Composer tidak punya `ext-intl`, padahal `filament/support`
+  mensyaratkannya, sehingga `composer install` menolak jalan.
+- **Tidak ada yang diunduh saat build selain paket npm dan Composer.** Font
+  Instrument Sans disimpan di `resources/fonts/`. Plugin font online sempat
+  menggagalkan build dengan `EAI_AGAIN`, karena lingkungan build tidak selalu
+  bisa menjangkau layanan font.
+
+### Setelan runtime
+
+| Setelan | Nilai | Alasan |
+|---|---|---|
+| `SERVER_NAME` | `:80` | HTTPS bawaan FrankenPHP dimatikan; TLS urusan Cloudflare |
+| `opcache.validate_timestamps` | `0` | Kode tidak pernah berubah di dalam container — **jangan menyunting berkas lewat Terminal**, perubahan tidak akan terbaca |
+| `upload_max_filesize` / `post_max_size` | `20M` | Batas unggahan e-library dan galeri |
+| `memory_limit` | `256M` | |
+| `HEALTHCHECK` | `curl -fsS http://127.0.0.1:80/up` | `/up` menjawab tanpa menyentuh database, jadi menguji "aplikasi melayani permintaan" |
+
+**Ekstensi PHP** yang benar-benar dituntut dependency: `intl` (Filament — tanpa
+itu admin panel tidak dimuat), `zip` dan `xmlreader` (export XLSX), `openssl`
+(kunci VAPID), `pdo_mysql`. Selain `intl`, `zip`, `pdo_mysql`, dan `opcache`,
+semuanya sudah bawaan image FrankenPHP. `gd` **tidak** diperlukan — berkas
+unggahan disimpan apa adanya.
+
+### Caddyfile
+
+`php_server` dibiarkan polos, tanpa subdirektif. Dua hal yang pernah
+menjatuhkan container:
+
+- Caddy memakai regex **RE2** milik Go, yang tidak mendukung *lookahead*. Pola
+  gaya Nginx seperti `/\.(?!well-known)` membuat Caddy menolak konfigurasinya
+  dan container restart terus-menerus.
+- `php_server` tidak menerima `try_files`.
+
+`.env` tetap aman tanpa aturan penolak berkas titik: letaknya di `/app`,
+sedangkan yang dilayani hanya `/app/public`.
+
+### Entrypoint — dijalankan setiap container start
+
+| Langkah | Kenapa di runtime, bukan saat build |
+|---|---|
+| Buat folder `storage/` dan atur izin | Volume mulanya kosong |
+| `storage:link --force` | Container baru tidak membawa symlink `public/storage` |
+| `filament:assets` | CSS/JS Filament di-gitignore dan lahir di tahap build yang dibuang. Tanpa langkah ini admin panel tampil sebagai HTML polos |
+| `migrate --force` | Skema selalu mengikuti kode. Aman diulang |
+| `config:cache`, `route:cache`, `view:cache`, `icons:cache` | Environment baru lengkap setelah Coolify menyuntikkannya |
+
+Akibatnya: **tidak ada langkah manual di setiap deploy**, dan **perubahan
+environment baru berlaku setelah Restart** — `config:cache` membekukan nilainya
+saat container start.
+
+### Worker mode — jangan diaktifkan dulu
+
+FrankenPHP bisa menahan aplikasi di memori antar-request (lewat Laravel
+Octane). Untuk skala satu masjid keuntungannya kecil sedangkan risikonya nyata,
+jadi image ini memakai **mode klasik**.
+
+Bila suatu saat ingin mengaktifkannya: aplikasi tidak lagi dibangun ulang tiap
+request, sehingga apa pun yang disimpan di properti statis atau binding
+`singleton` bocor antar-pengunjung. Satu titik yang sudah dipersiapkan:
+`PublicLayoutComposer` sengaja di-bind `scoped`, bukan `singleton` (lihat
+`AppServiceProvider`), dan `tests/Feature/WorkerModeTest.php` menjaganya.
+Pasang `laravel/octane`, pastikan seluruh test hijau, lalu ubah `CMD` di
+`Dockerfile`.
 
 ---
 
-## 3. Konfigurasi `.env`
+## 3. Database — MySQL di Coolify
 
-```bash
-cp .env.example .env
-php artisan key:generate
+**+ New → Database → MySQL**, lalu isi:
+
+| Field | Nilai |
+|---|---|
+| Normal User / Normal User Password | Tetapkan **sebelum Start pertama** |
+| Initial Database | `masjid_annur` |
+| Custom MySQL Configuration | lihat di bawah |
+| Ports Mappings | **kosong** |
+| Make it publicly available | **tidak dicentang** |
+
+```ini
+[mysqld]
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
 ```
 
-Isi seperti berikut:
+Collation disamakan dengan bawaan Laravel. Bila berbeda, suatu hari muncul
+galat `Illegal mix of collations` yang sulit dilacak.
+
+**Save → Start.** Setelah berjalan, ambil host dari **MySQL URL (internal)** —
+berupa ID acak seperti `c9rlue88ncdzpslhco01kctd`. Itulah `DB_HOST`: bukan
+`localhost`, bukan IP server.
+
+> Coolify memperingatkan: *"If you change the values in the database, please
+> sync it here"*. Artinya bila kredensial diubah langsung di dalam MySQL,
+> nilainya harus disamakan di halaman ini — kalau tidak, backup otomatis
+> Coolify gagal. Paling aman: ubah kredensial lewat Coolify, sebelum Start
+> pertama.
+
+---
+
+## 4. Aplikasi di Coolify
+
+### 4.1 Buat resource
+
+**+ New → Application**, pilih repository (Public Repository, atau lewat GitHub
+App bila repo privat), branch `main`, build pack **Dockerfile**. Base Directory
+`/` dan lokasi Dockerfile `/Dockerfile` biarkan bawaan.
+
+### 4.2 Configuration → General
+
+| Field | Nilai | Catatan |
+|---|---|---|
+| Domains | `https://masjid.iqbalfhz.my.id` | Lengkap dengan `https://` |
+| Ports Exposes | **`80`** | Coolify sering mengisi `3000`. Salah isi = container hidup, tapi tidak ada yang menjawab |
+| Port Mappings | **`127.0.0.1:8087:80`** | Pintu masuk tunnel, hanya terjangkau dari server sendiri |
+
+Lalu lintas publik tidak melewati proxy Coolify: tunnel menyambung langsung ke
+port 8087 (bagian 5). Nomor 8087 dipilih mengikuti urutan aplikasi lain di
+server ini.
+
+**Ikatan ke `127.0.0.1` hanya bekerja bila `cloudflared` berjalan dengan network
+mode `host`.** Periksa di server:
+
+```bash
+docker inspect $(docker ps -q --filter "name=cloudflared") --format '{{.HostConfig.NetworkMode}}'
+```
+
+Harus `host`. Bila hasilnya `bridge` atau nama jaringan lain, ikatan loopback
+membuat tunnel tidak bisa menjangkau aplikasi — pakai `8087:80` dan tutup port
+itu di firewall server.
+
+### 4.3 Persistent Storage
+
+**+ Add → Volume Mount:**
+
+| Field | Nilai |
+|---|---|
+| Name | `masjid-storage` |
+| Destination Path | `/app/storage/app/public` |
+
+**Hanya path itu.** Volume ini untuk data yang tidak bisa dibuat ulang — berkas
+unggahan. Sisa `storage/` (cache, view terkompilasi) memang dibuang di setiap
+deploy.
+
+Docker menamai volumenya `<uuid-aplikasi>-masjid-storage`, dengan isi di
+`/var/lib/docker/volumes/<uuid-aplikasi>-masjid-storage/_data` — jalur ini yang
+dipakai untuk backup (bagian 10). Pastikan benar-benar terpasang:
+
+```bash
+docker inspect $(docker ps -q --filter "name=<uuid-aplikasi>" | head -1) --format '{{json .Mounts}}'
+```
+
+Harus memuat `"Destination":"/app/storage/app/public"`. Bila hasilnya `[]`,
+volume tidak terpasang dan **semua unggahan hilang di redeploy berikutnya**. Ini
+pernah terjadi: sampul album, QRIS, dan logo yang diunggah sebelum volume
+dipasang tidak bisa dipulihkan dan harus diunggah ulang.
+
+### 4.4 Environment Variables
+
+Isi di **Environment Variables**. Tidak ada variabel yang dibutuhkan saat build —
+semuanya dibaca saat container start.
 
 ```env
 APP_NAME="Masjid An-Nur"
 APP_ENV=production
+APP_KEY=base64:...                      # php artisan key:generate --show (di lokal)
 APP_DEBUG=false
-APP_URL=https://masjidannur.or.id
+APP_URL=https://masjid.iqbalfhz.my.id
 APP_LOCALE=id
 APP_TIMEZONE=Asia/Jakarta
 
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=<host dari MySQL URL (internal)>
 DB_PORT=3306
 DB_DATABASE=masjid_annur
-DB_USERNAME=masjid
-DB_PASSWORD=<password-kuat>
+DB_USERNAME=<Normal User>
+DB_PASSWORD=<Normal User Password>
 
+SESSION_DRIVER=database
+SESSION_SECURE_COOKIE=true
+CACHE_STORE=database
+QUEUE_CONNECTION=database
 FILESYSTEM_DISK=public
 
 PRAYER_API_PROVIDER=aladhan
@@ -132,478 +260,462 @@ PRAYER_API_METHOD=20
 SCOUT_DRIVER=database
 SCOUT_QUEUE=false
 
-VAPID_PUBLIC_KEY=
+VAPID_PUBLIC_KEY=                       # bagian 8
 VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=mailto:admin@masjidannur.or.id
+VAPID_SUBJECT=mailto:<email pengelola>
 
-LOG_CHANNEL=daily
 LOG_LEVEL=warning
 
-# Di belakang reverse proxy atau Cloudflare Tunnel (lihat "Header keamanan dan CSP")
 TRUSTED_PROXIES=*
-
-# Biarkan kosong. Sakelar darurat CSP — lihat "Header keamanan dan CSP"
-# CSP_REPORT_ONLY=true
+# CSP_REPORT_ONLY=true                  # jangan diisi — sakelar darurat
 ```
 
-### Tiga nilai yang paling sering salah
+Tanda `<…>` hanya penanda tempat: ganti seluruhnya, **termasuk tanda kurung
+sudutnya**. Contoh: `VAPID_SUBJECT=mailto:nama@domain.com`, bukan
+`VAPID_SUBJECT=mailto:<nama@domain.com>`.
 
-**`APP_DEBUG=false`.** Bila `true`, halaman error menampilkan isi `.env` —
-termasuk password database — kepada siapa pun yang memicunya. Ini kebocoran
-kredensial, bukan sekadar tampilan berantakan.
+Setiap perubahan: **Save, lalu Restart.**
+
+### Nilai yang paling sering salah
+
+**`APP_KEY`.** Buat sekali di lokal dengan `php artisan key:generate --show`,
+tempel lengkap dengan awalan `base64:`, dan simpan salinannya di luar server.
+Kosong berarti aplikasi menolak jalan; berganti berarti semua sesi login putus
+dan data terenkripsi tidak terbaca lagi.
+
+**`APP_DEBUG=false`.** Bila `true`, halaman error menampilkan isi environment —
+termasuk password database — kepada siapa pun yang memicunya.
 
 **`APP_URL` harus alamat produksi lengkap dengan `https://`.** Perintah yang
 berjalan lewat CLI (scheduler, seeder) tidak punya request untuk dijadikan
 acuan, sehingga membangun tautan dari `APP_URL`. Salah isi berarti tautan di
-pengingat Web Push mengarah ke alamat yang keliru.
+notifikasi dan pengingat Web Push mengarah ke alamat yang keliru.
 
 **`APP_TIMEZONE` harus zona masjid.** Jadwal sholat dari API disimpan sebagai jam
 lokal, sedangkan "waktu sholat berikutnya" dihitung dari `now()`. Bila dibiarkan
-`UTC`, keduanya meleset 7 jam dan beranda menampilkan waktu sholat yang sudah
-lewat. Untuk masjid di zona lain: `Asia/Makassar` (WITA) atau `Asia/Jayapura`
-(WIT) — singkatan zonanya ikut menyesuaikan otomatis di tampilan.
+`UTC`, keduanya meleset 7 jam. Untuk masjid di zona lain: `Asia/Makassar` (WITA)
+atau `Asia/Jayapura` (WIT).
+
+**`SESSION_SECURE_COOKIE=true`.** Cookie login hanya dikirim lewat HTTPS. Aman
+karena seluruh lalu lintas publik datang lewat Cloudflare.
+
+Koordinat dan metode hisab juga bisa diubah belakangan lewat **Pengaturan Umum**
+di admin panel, tanpa menyentuh environment.
 
 ### Header keamanan dan CSP
 
 Header keamanan (HSTS, anti-clickjacking, Content-Security-Policy, dan lainnya)
-dipasang oleh aplikasi sendiri, bukan oleh web server, jadi tidak ada yang perlu
-dikonfigurasi di Caddy. Daftar lengkap dan alasannya ada di PRD bagian 6.2.
+dipasang oleh aplikasi sendiri, bukan oleh web server. Daftar lengkap dan
+alasannya ada di PRD bagian 6.2. Hasil pemindaian securityheaders.com saat ini:
+**A+** (sebelum audit: F).
 
-**`TRUSTED_PROXIES`.** Di belakang Cloudflare Tunnel atau reverse proxy, request
-sampai ke aplikasi sebagai HTTP biasa. Tanpa mempercayai proxy, aplikasi mengira
-dirinya tidak diakses lewat HTTPS: header HSTS tidak dikirim dan tautan dibangun
-dengan `http://`. Nilai `*` mempercayai proxy mana pun — aman **hanya bila port
-aplikasi tidak bisa dijangkau langsung dari luar**, misalnya port container yang
-terikat ke `127.0.0.1` (`127.0.0.1:8087:80`). Bila port terbuka ke internet,
-isi dengan IP proxy yang sebenarnya.
+**`TRUSTED_PROXIES`.** Request dari tunnel sampai ke aplikasi sebagai HTTP biasa.
+Tanpa mempercayai proxy, aplikasi mengira dirinya tidak diakses lewat HTTPS:
+header HSTS tidak dikirim dan tautan dibangun dengan `http://`. Nilai `*`
+mempercayai proxy mana pun — aman **hanya karena port aplikasi terikat ke
+`127.0.0.1`** (bagian 4.2). Bila port dibuka ke jaringan lain, isi dengan IP
+proxy yang sebenarnya.
 
 **`CSP_REPORT_ONLY` — sakelar darurat.** Halaman publik memblokir semua skrip
 inline. Bila setelah update ada fitur publik yang mendadak mati — tombol tidak
 bereaksi, dan konsol browser menampilkan `violates the following Content
-Security Policy` — isi `CSP_REPORT_ONLY=true` lalu muat ulang konfigurasi
-(`php artisan config:cache`; di Coolify cukup ubah variabel lalu **Restart**).
+Security Policy` — isi `CSP_REPORT_ONLY=true`, Save, lalu **Restart**.
 Kebijakan tetap dikirim tapi tidak lagi memblokir. Setelah kodenya diperbaiki
 (skrip dipindah ke `resources/js/app.js`), hapus lagi variabel ini.
 
-Setelah deploy, periksa hasilnya di <https://securityheaders.com>.
+### 4.5 Deploy pertama
 
----
+Klik **Deploy**. Build memakan beberapa menit (`npm ci` dan `composer install`);
+ikuti lognya di **Deployments**. Bila Healthcheck di Coolify diaktifkan, isi path
+`/up` dan port `80` — image sudah membawa `HEALTHCHECK` sendiri dengan tujuan
+yang sama.
 
-## 4. Database & Data Awal
+Setelah container berjalan, buka tab **Terminal** aplikasi dan jalankan
+**sekali saja**:
 
 ```bash
-php artisan migrate --force
 php artisan db:seed --force
-```
-
-> `--force` diperlukan karena Laravel menolak migrasi dan seeding di
-> `production` tanpa konfirmasi.
-
-`db:seed` aman dijalankan di server: `DatabaseSeeder` hanya memanggil
-`RoleSeeder`, `UserSeeder`, dan `MasterDataSeeder`, sedangkan `DemoContentSeeder`
-dipagari `app()->environment(['local', 'testing'])` sehingga tidak akan ikut
-jalan selama `APP_ENV=production`.
-
-Jangan pernah memanggil `php artisan db:seed --class=DemoContentSeeder` secara
-manual di server — pemanggilan langsung melewati pagar itu dan akan mengisi
-database dengan konten contoh.
-
-`UserSeeder` membuat akun dummy tiap peran. **Ganti password semuanya sebelum
-go-live**, atau buat akun pengurus asli lalu hapus yang dummy.
-
-Daftarkan permission Filament Shield:
-
-```bash
 php artisan shield:generate --all --panel=admin
 php artisan permission:cache-reset
-```
-
----
-
-## 5. Storage, Izin Berkas, dan Cache
-
-```bash
-php artisan storage:link
-```
-
-Web server harus bisa menulis ke dua folder ini, dan **hanya** dua folder ini:
-
-```bash
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
-```
-
-> Jangan `chmod -R 777` ke seluruh proyek. Itu mengizinkan siapa pun yang punya
-> pijakan di server menulis ulang kode aplikasi Anda.
-
-Optimalkan untuk production:
-
-```bash
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan icons:cache
-```
-
-> Setelah `config:cache`, perubahan `.env` **tidak lagi terbaca** sampai Anda
-> menjalankan `php artisan config:clear`. Ini penyebab paling umum "sudah saya
-> ubah tapi tidak ngefek".
-
----
-
-## 6. Web Server — FrankenPHP
-
-Sistem ini dilayani **FrankenPHP**, server aplikasi PHP berbasis Caddy. PHP
-tertanam di dalam prosesnya, jadi **tidak ada PHP-FPM, tidak ada Nginx, dan
-tidak ada Certbot** — ketiganya digantikan satu binary.
-
-Document root tetap **wajib** menunjuk ke `public/`. Kalau salah, `.env` bisa
-diunduh lewat browser.
-
-### Pasang
-
-```bash
-curl https://frankenphp.dev/install.sh | sh
-sudo mv frankenphp /usr/local/bin/
-frankenphp version
-```
-
-Binary-nya sudah membawa PHP sendiri. Verifikasi ekstensi wajib memakai PHP
-milik FrankenPHP, **bukan** PHP sistem:
-
-```bash
-frankenphp php-cli -r 'foreach (["intl","zip","xmlreader","openssl","pdo_mysql"] as $e) { printf("%-12s %s\n", $e, extension_loaded($e) ? "ok" : "HILANG"); }'
-```
-
-> Ini langkah yang mudah terlewat. `php -m` di server bisa menunjukkan semuanya
-> lengkap, sementara PHP yang benar-benar melayani request adalah milik
-> FrankenPHP — dan isinya bisa berbeda.
-
-### Caddyfile
-
-Simpan di `/etc/frankenphp/Caddyfile`:
-
-```caddy
-masjidannur.or.id {
-    root * /var/www/masjid/public
-    encode zstd br gzip
-
-    # Batas unggahan: e-library PDF & video galeri
-    request_body {
-        max_size 20MB
-    }
-
-    # Tolak akses ke berkas tersembunyi, kecuali ACME
-    @hidden path_regexp /\.(?!well-known)
-    respond @hidden 403
-
-    php_server
-}
-```
-
-`request_body max_size` harus selaras dengan `upload_max_filesize` dan
-`post_max_size` di `php.ini` FrankenPHP — kalau tidak, unggahan besar gagal
-tanpa pesan yang jelas.
-
-### Jalankan sebagai service
-
-```ini
-# /etc/systemd/system/frankenphp.service
-[Unit]
-Description=FrankenPHP - Masjid An-Nur
-After=network.target mysql.service
-
-[Service]
-Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/var/www/masjid
-ExecStart=/usr/local/bin/frankenphp run --config /etc/frankenphp/Caddyfile
-ExecReload=/bin/kill -USR1 $MAINPID
-Restart=always
-RestartSec=5
-
-# Caddy butuh port 80/443 tanpa harus berjalan sebagai root
-AmbientCapabilities=CAP_NET_BIND_SERVICE
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now frankenphp
-sudo systemctl status frankenphp
-```
-
-### HTTPS otomatis
-
-Caddy mengurus sertifikat Let's Encrypt sendiri — terbit dan diperpanjang
-otomatis, **tanpa Certbot dan tanpa cron pembaruan sertifikat**. Syaratnya:
-
-1. Domain di Caddyfile sudah mengarah ke IP server (A/AAAA record).
-2. Port **80 dan 443** terbuka. Port 80 tidak boleh ditutup — dipakai untuk
-   tantangan ACME.
-3. Alamat di Caddyfile adalah nama domain, bukan `:80`.
-
-HTTPS bukan sekadar praktik baik di sini: **Web Push tidak akan bekerja
-tanpanya**, karena browser menolak Service Worker di koneksi tidak aman. Jadi
-pengingat sholat bergantung pada langkah ini.
-
-Untuk uji coba lokal tanpa domain, ganti baris pertama Caddyfile menjadi
-`http://localhost` — Caddy akan melewati HTTPS. Ingat bahwa Web Push tidak bisa
-diuji dalam kondisi itu.
-
-### Worker mode — jangan diaktifkan dulu
-
-FrankenPHP bisa menahan aplikasi di memori antar-request (lewat Laravel Octane),
-yang membuatnya jauh lebih cepat. Untuk skala satu masjid, keuntungannya kecil
-sedangkan risikonya nyata — jadi **mode klasik sudah memadai** dan itulah yang
-dipakai konfigurasi di atas.
-
-Bila suatu saat ingin mengaktifkannya, pahami perubahan aturannya lebih dulu:
-aplikasi tidak lagi dibangun ulang tiap request, sehingga apa pun yang disimpan
-di properti statis atau binding `singleton` akan **bocor antar-pengunjung**.
-
-Proyek ini sudah dipersiapkan untuk itu di satu titik yang diketahui:
-`PublicLayoutComposer` memoize identitas masjid, pengumuman berjalan, dan
-penanda menu aktif. Penanda itu berasal dari request yang sedang berjalan, jadi
-bindingnya sengaja `scoped`, bukan `singleton` — lihat `AppServiceProvider`.
-Dengan `singleton`, menu akan tersorot mengikuti halaman yang dibuka pengunjung
-**pertama** dan pengaturan masjid membeku sampai worker di-restart.
-`tests/Feature/WorkerModeTest.php` menjaga perilaku ini.
-
-Langkahnya bila tetap ingin diaktifkan:
-
-```bash
-composer require laravel/octane
-php artisan octane:install --server=frankenphp
-php artisan test          # wajib hijau sebelum lanjut
-```
-
-Lalu jalankan lewat `php artisan octane:start --server=frankenphp` di service
-systemd, dan **tambahkan `php artisan octane:reload` ke prosedur update** —
-tanpa itu, kode baru tidak akan aktif karena worker masih memegang versi lama.
-
----
-
-## 7. Cron — Bagian yang Paling Mudah Terlupa
-
-Dua pekerjaan menopang masjid di latar belakang. Keduanya bergantung pada satu
-baris cron:
-
-```bash
-sudo crontab -e -u www-data
-```
-
-```cron
-* * * * * cd /var/www/masjid && php artisan schedule:run >> /dev/null 2>&1
-```
-
-> **Cron tidak ikut disediakan FrankenPHP.** Server aplikasi hanya melayani
-> request HTTP; pekerjaan terjadwal tetap butuh cron sistem. Ini mudah terlewat
-> justru karena FrankenPHP menggantikan begitu banyak komponen lain.
->
-> Bila server tidak memasang PHP CLI sistem (lihat bagian 1), barisnya menjadi:
->
-> ```cron
-> * * * * * cd /var/www/masjid && /usr/local/bin/frankenphp php-cli artisan schedule:run >> /dev/null 2>&1
-> ```
->
-> Pakai jalur absolut ke binary-nya — `PATH` milik cron biasanya jauh lebih
-> sempit daripada di terminal Anda.
-
-| Perintah | Jadwal | Kalau tidak jalan |
-|---|---|---|
-| `masjid:sync-prayer-schedules` | Harian 01:30 | Jadwal sholat di website publik jadi basi dan akhirnya habis |
-| `masjid:send-prayer-reminders` | Tiap menit | Pengingat berhenti terkirim ke jamaah |
-
-> **Kegagalannya tidak bersuara.** Bila cron mati, tidak ada pesan error di mana
-> pun. Yang pertama menyadari adalah jamaah yang salah datang waktu subuh.
-> Karena itu dashboard punya kartu **Kesehatan Sistem** — lihat bagian 9.
-
-Ambil jadwal sholat pertama kali, jangan menunggu 01:30:
-
-```bash
 php artisan masjid:sync-prayer-schedules
 ```
 
+> **`db:seed` mencetak password akun pengurus satu kali saja — catat saat itu
+> juga.** Di produksi password dibuat acak dan tidak ditampilkan lagi. Ini
+> pernah terjadi: password tidak tercatat, tidak ada yang bisa login, dan
+> password harus direset lewat Terminal (bagian 12).
+
+`db:seed` aman di produksi: `DatabaseSeeder` hanya memanggil `RoleSeeder`,
+`UserSeeder`, dan `MasterDataSeeder`. `DemoContentSeeder` dipagari
+`app()->environment(['local', 'testing'])`. **Jangan pernah** memanggil
+`php artisan db:seed --class=DemoContentSeeder` di server — pemanggilan langsung
+melewati pagar itu.
+
+Akun dari `UserSeeder` adalah akun dummy tiap peran. Ganti password semuanya,
+atau buat akun pengurus asli lalu hapus yang dummy.
+
+---
+
+## 5. Cloudflare Tunnel
+
+**Cloudflare Zero Trust → Networks → Tunnels** → tunnel yang sudah melayani
+Coolify → **Public Hostnames → Add a public hostname:**
+
+| Field | Nilai |
+|---|---|
+| Subdomain | `masjid` |
+| Domain | `iqbalfhz.my.id` |
+| Type | `HTTP` |
+| URL | `localhost:8087` |
+
+TLS berakhir di Cloudflare. Dari `cloudflared` ke aplikasi lalu lintasnya HTTP
+biasa, tapi tidak pernah keluar dari server — karena itu aplikasi butuh
+`TRUSTED_PROXIES` untuk tahu bahwa pengunjungnya datang lewat HTTPS.
+
+Tanpa rute ini, Cloudflare mencoba menyambung langsung ke IP publik server dan
+gagal. Gejala yang pernah muncul: `coolify.iqbalfhz.my.id` terbuka, sedangkan
+`masjid.iqbalfhz.my.id` tidak — karena hanya yang pertama punya rute di tunnel.
+
+HTTPS bukan sekadar praktik baik di sini: **Web Push tidak bekerja tanpanya**,
+karena browser menolak Service Worker di koneksi tidak aman.
+
+---
+
+## 6. Scheduled Task — Pengganti Cron
+
+**Configuration → Scheduled Tasks → + Add:**
+
+| Field | Nilai |
+|---|---|
+| Name | bebas, mis. `Scheduler Laravel` |
+| Command | `php artisan schedule:run` |
+| Frequency | `* * * * *` |
+| Timeout (seconds) | `300` (bawaan) |
+| Container name | kosong — aplikasi ini hanya satu container |
+
+| Perintah | Jadwal | Kalau tidak jalan |
+|---|---|---|
+| `masjid:sync-prayer-schedules` | Harian 01:30 | Jadwal sholat di website publik lama-lama habis |
+| `masjid:send-prayer-reminders` | Tiap menit | Pengingat berhenti terkirim ke jamaah |
+
+> **Kegagalannya tidak bersuara.** Bila scheduler mati, tidak ada pesan error di
+> mana pun. Yang pertama menyadari adalah jamaah yang salah datang waktu subuh.
+
+### Memastikan scheduler benar-benar jalan
+
+1. **Laravel mengenali tugasnya** — di Terminal: `php artisan schedule:list`.
+   Kedua perintah di atas harus terdaftar.
+2. **Coolify benar-benar menjalankannya** — buka Scheduled Task tersebut dan
+   lihat riwayat eksekusinya. Harus ada entri setiap menit dengan status
+   berhasil. **Ini satu-satunya bukti langsung.**
+
+Kartu **Kesehatan Sistem** di Dashboard membantu, tapi perlu dibaca dengan benar:
+
+- **Jadwal sholat tersedia** menunjukkan sampai tanggal berapa data jadwal ada.
+  Sinkronisasi mengambil bulan ini ditambah dua bulan ke depan
+  (`PRAYER_API_SYNC_MONTHS=2`), jadi satu kali jalan — termasuk yang manual di
+  bagian 4.5 — sudah menghasilkan angka seperti "79 hari lagi, sampai 30
+  November". Angka itu **berkurang satu setiap hari walaupun scheduler sehat**,
+  lalu melonjak sekitar 30 hari tiap tanggal 1 setelah pukul 01:30. Bila pada
+  tanggal 2 angkanya tidak melonjak, scheduler mati. Sinyal ini lambat: dari
+  kartu ini saja, scheduler yang mati paling cepat ketahuan di awal bulan
+  berikutnya.
+- **Pengingat sholat** berubah menjadi "Terakhir terkirim …" setelah Web Push
+  aktif dan ada jamaah berlangganan — sinyal yang jauh lebih cepat, karena
+  diperbarui setiap waktu sholat.
+
 ### Queue worker tidak diperlukan
 
-Ini keputusan sadar. Tidak ada pekerjaan berat yang perlu ditunda di sistem skala
-satu masjid, sementara bergantung pada worker berarti fitur diam-diam berhenti
-setiap kali worker mati:
+Keputusan sadar. Bergantung pada worker berarti fitur diam-diam berhenti setiap
+kali worker mati:
 
 - **Notifikasi internal** dikirim langsung lewat
-  `App\Support\ImmediateDatabaseNotification`. Menyimpannya hanya satu INSERT.
+  `App\Support\ImmediateDatabaseNotification` — menyimpannya hanya satu INSERT.
 - **Export rekap** dijalankan `sync` supaya berkas jadi saat itu juga.
-- **Reminder Web Push** sudah berjalan di proses cron-nya sendiri.
+- **Reminder Web Push** berjalan di proses scheduler.
 
-Jadi **tidak perlu** menyiapkan Supervisor. Kalau nanti ada pekerjaan berat baru
-(misalnya email massal), barulah siapkan worker — dan ingat bahwa kegagalannya
-senyap.
+Karena tidak ada yang diantrekan, nilai `QUEUE_CONNECTION` tidak berpengaruh.
+Kalau nanti ada pekerjaan berat baru (misalnya email massal), barulah siapkan
+worker — dan ingat bahwa kegagalannya senyap.
+
+---
+
+## 7. Auto-deploy dari GitHub
+
+1. Coolify → aplikasi → **Webhooks → Manual Git Webhooks → GitHub**. Salin
+   URL-nya (`https://<alamat-coolify>/webhooks/source/github/events/manual`)
+   beserta **GitHub Webhook Secret** di sebelahnya.
+2. GitHub → repository → **Settings → Webhooks → Add webhook:**
+   - **Payload URL**: URL dari langkah 1
+   - **Content type**: `application/json` — bukan `form-urlencoded`
+   - **Secret**: GitHub Webhook Secret dari Coolify
+   - **Which events**: *Just the push event*
+3. Kembali ke Coolify, pastikan **Auto Deploy** aktif.
+
+Yang di atasnya — *Deploy Webhook (auth required)* — untuk dipanggil dari skrip
+atau CI dengan Bearer token; tidak dipakai di alur ini.
+
+**Konsekuensinya: setiap push ke `main` adalah deploy produksi.** Jalankan
+`php artisan test --compact` sebelum push. Migrasi ikut berjalan otomatis saat
+container start, jadi push yang membawa migrasi langsung mengubah database —
+backup dulu (bagian 10).
+
+Karena port host `127.0.0.1:8087` tidak bisa dipakai dua container sekaligus,
+container lama berhenti sebelum yang baru menyala. Ada jeda singkat tanpa
+layanan setiap kali deploy.
 
 ---
 
 ## 8. Web Push (Pengingat Sholat)
 
-```bash
-php artisan masjid:vapid-keys
-```
+1. Buat sepasang kunci baru, di lokal atau di Terminal Coolify:
 
-Salin kedua kunci ke `.env`, lalu `php artisan config:clear && php artisan config:cache`.
+   ```bash
+   php artisan masjid:vapid-keys
+   ```
+
+   Perintah ini hanya **mencetak** dua baris `VAPID_PUBLIC_KEY=...` dan
+   `VAPID_PRIVATE_KEY=...`, tanpa menulis ke berkas mana pun. Buat pasangan
+   khusus produksi — jangan memakai ulang kunci dari `.env` lokal.
+2. Isi `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, dan `VAPID_SUBJECT` di
+   Environment Variables, lalu **Restart**. `VAPID_SUBJECT` diisi alamat email
+   yang benar-benar ada, format `mailto:nama@domain` — layanan push memeriksa
+   nilai ini, dan bawaan `mailto:admin@masjidannur.test` bukan alamat sungguhan.
+3. Dashboard → Kesehatan Sistem → kartu **Pengingat sholat** berubah dari
+   "Belum aktif — Kunci VAPID belum dibuat" menjadi "Dimatikan".
+4. Admin panel → **Pengaturan Umum → tab Jadwal Sholat & Reminder** → nyalakan
+   **Aktifkan reminder push notification**, centang waktu sholat yang boleh
+   diingatkan, lalu **Simpan pengaturan**. Kartu berubah menjadi "0 jamaah
+   berlangganan".
+
+   Urutannya penting: toggle ini yang memunculkan tombol di halaman publik,
+   sedangkan kunci VAPID yang membuat tombolnya bekerja. Toggle yang dinyalakan
+   sebelum kunci terpasang menghasilkan tombol yang hanya menjawab "Pengingat
+   belum diaktifkan pengurus masjid".
+5. Uji dari HP Android (Chrome): buka `/jadwal-sholat` → bagian **Pengingat
+   waktu sholat** → pilih waktu sholat dan jeda menit → **Aktifkan pengingat
+   sholat** → izinkan notifikasi. Kartu di Dashboard menjadi "1 jamaah
+   berlangganan", lalu "Terakhir terkirim …" setelah notifikasi pertama sampai.
+
+6. Uji dari iPhone (Safari): buka situsnya, ketuk tombol **Bagikan** →
+   **Tambahkan ke Layar Utama**, lalu buka lewat ikon yang baru muncul. Dari
+   sana `/jadwal-sholat` bekerja sama seperti di Android. Selama dibuka di tab
+   Safari biasa, halaman itu menampilkan petunjuk ini alih-alih tombol aktif —
+   iOS memang hanya membuka Web Push untuk web app yang terpasang.
+
+Jeda pengingat dipilih masing-masing jamaah di halaman publik (5, 10, 15, atau
+30 menit). Nilai bawaannya diambil dari **Jeda pengingat bawaan (menit)** di
+Pengaturan Umum.
+
+> **Nada dering tidak bisa diatur dari aplikasi.** Web Push tidak punya opsi
+> suara; yang menentukan berbunyi atau senyap adalah saluran notifikasi browser
+> di HP (Setelan → Aplikasi → Chrome → Notifikasi → nama situs). Notifikasi yang
+> masuk tanpa suara hampir selalu karena saluran itu disetel senyap.
 
 > **Kunci VAPID hanya dibuat sekali.** Menggantinya membuat seluruh langganan
-> jamaah yang sudah terdaftar menjadi tidak sah, dan mereka harus berlangganan
-> ulang satu per satu. Simpan cadangannya bersama backup `.env`.
-
-Aktifkan lewat admin panel: **Pengaturan Umum → Pengingat Sholat**.
+> jamaah yang sudah terdaftar tidak sah, dan mereka harus berlangganan ulang
+> satu per satu. Kunci privat tidak boleh di-commit; simpan salinannya bersama
+> `APP_KEY`.
 
 ---
 
 ## 9. Verifikasi Setelah Deploy
 
-Jalankan berurutan. Ini daftar yang benar-benar sering gagal, bukan formalitas.
+Ini daftar yang benar-benar pernah gagal, bukan formalitas.
 
 | # | Periksa | Cara | Lolos bila |
 |---|---|---|---|
 | 1 | Halaman publik hidup | Buka `https://domain` | Beranda tampil, waktu sholat **sesuai jam dinding** |
-| 2 | `.env` tidak terekspos | Buka `https://domain/.env` | 404 atau 403 |
-| 3 | Debug mati | Picu URL ngawur, mis. `/xyz` | Halaman 404 biasa, bukan jejak error Laravel |
-| 4 | Aset terbangun | Lihat tampilan | Tata letak rapi, bukan HTML polos |
+| 2 | `.env` tidak terekspos | Buka `https://domain/.env` | 404 |
+| 3 | Debug mati | Buka URL ngawur, mis. `/xyz` | Halaman 404 biasa, bukan jejak error Laravel |
+| 4 | Aset terbangun | Lihat tampilan publik dan admin | Keduanya bergaya, bukan HTML polos |
 | 5 | Login admin | `https://domain/admin` | Bisa masuk |
-| 6 | Upload berfungsi | Unggah 1 foto galeri | Gambar tampil setelah disimpan |
-| 7 | **Cron hidup** | Dashboard → Kesehatan Sistem | "Jadwal sholat tersedia" berangka wajar, bukan "Habis" |
-| 8 | Notifikasi sampai | Kirim 1 testimoni dari form publik | Lonceng sekretaris bertambah |
-| 9 | Tautan notifikasi benar | Klik "Lihat detail" | Masuk ke halaman yang sesuai |
-| 10 | Peran sesuai matriks | Login tiap peran | Menu & dashboard sesuai PRD 5.3 / 5.4 |
-| 11 | Export jalan | Keuangan → Export | Berkas terunduh |
-| 12 | HTTPS & Push | Izinkan notifikasi di HP | Langganan tersimpan |
-| 13 | Service tahan restart | `sudo reboot`, tunggu, buka situs | Situs hidup sendiri tanpa dijalankan manual |
-| 14 | Sertifikat terbit benar | Klik gembok di browser | Diterbitkan Let's Encrypt, bukan sertifikat internal Caddy |
+| 6 | Volume bekerja | Unggah 1 foto galeri, lalu **Redeploy** | Foto masih ada setelah redeploy |
+| 7 | Pratinjau unggahan | Buka form ubah yang sudah bergambar | Gambar tampil, bukan kotak abu-abu |
+| 8 | **Scheduler hidup** | Riwayat eksekusi Scheduled Task | Ada entri tiap menit, berhasil |
+| 9 | Notifikasi sampai | Kirim 1 testimoni dari form publik | Lonceng sekretaris bertambah |
+| 10 | Tautan notifikasi benar | Klik "Lihat detail" | Masuk ke halaman yang sesuai |
+| 11 | Peran sesuai matriks | Login tiap peran | Menu & dashboard sesuai PRD 5.3 / 5.4 |
+| 12 | Export jalan | Keuangan → Export | Berkas terunduh |
+| 13 | Header keamanan | securityheaders.com | Semua header terdeteksi (saat ini A+) |
+| 14 | Port tertutup dari jaringan lokal | Di server, lihat perintah di bawah | Loopback 200, IP LAN gagal |
+| 15 | Tahan reboot | Reboot VM, tunggu, buka situs | Situs hidup sendiri |
 
-Poin 7 adalah cara termurah memastikan cron benar-benar hidup. Kembali cek
-keesokan harinya: bila angkanya tidak bertambah, `schedule:run` tidak jalan.
+Untuk poin 14:
 
-Poin 13 memastikan `systemctl enable` benar-benar dijalankan. Tanpa itu semuanya
-tampak normal sampai server pertama kali reboot, lalu situs mati dan tidak ada
-yang tahu penyebabnya.
-
-Poin 14 membedakan dua kondisi yang mirip di layar: Caddy menerbitkan sertifikat
-internal bila gagal menjangkau Let's Encrypt. Situs tetap terbuka lewat HTTPS,
-tapi browser pengunjung akan memperingatkannya — dan Web Push tetap gagal.
+```bash
+docker ps --format "{{.Names}}\t{{.Ports}}" | grep 8087     # harus 127.0.0.1:8087->80/tcp
+curl -I http://127.0.0.1:8087/                              # harus 200
+curl -I --max-time 5 http://<IP-LAN-server>:8087/           # harus GAGAL tersambung
+```
 
 ---
 
-## 10. Update Versi
+## 10. Update, Backup, dan Rollback
 
-```bash
-cd /var/www/masjid
-php artisan down --render="errors::503"
+**Update** cukup dengan push ke `main` (bagian 7). Tidak ada perintah manual:
+entrypoint menjalankan migrasi dan cache setiap container start.
 
-git pull origin main
-composer install --no-dev --optimize-autoloader
-npm ci && npm run build
-php artisan migrate --force
+**Backup** — dua hal yang tidak bisa dibuat ulang: isi database dan berkas
+unggahan. Kodenya selalu bisa di-clone lagi.
 
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan icons:cache
+- **Database:** resource MySQL → **Backups** → jadwalkan backup harian.
+- **Berkas unggahan:** arsipkan isi volume dari server, misalnya lewat cron
+  milik host:
 
-sudo systemctl reload frankenphp
-php artisan up
-```
+  ```cron
+  0 2 * * * tar -czf /backup/storage-$(date +\%F).tar.gz -C /var/lib/docker/volumes/<uuid-aplikasi>-masjid-storage/_data .
+  ```
 
-> `reload` memuat ulang konfigurasi tanpa memutus koneksi yang sedang berjalan.
-> Di mode klasik sebenarnya tidak wajib — tiap request sudah memuat kode
-> terbaru — tapi memasukkannya ke prosedur sejak awal menghindari satu kelas
-> kebingungan nanti: **kalau worker mode diaktifkan, kode baru tidak akan aktif
-> tanpa langkah ini**, dan gejalanya membingungkan karena berkasnya jelas sudah
-> berubah. Bila memakai Octane, ganti dengan `php artisan octane:reload`.
+- **Seluruh VM:** backup Proxmox (vzdump) mencakup keduanya sekaligus.
+- **`APP_KEY` dan kunci VAPID:** simpan salinannya di luar server. Tanpa
+  `APP_KEY` yang sama, database hasil restore tidak bisa membaca data
+  terenkripsinya.
 
-**Backup dulu sebelum migrasi**, selalu:
+> Backup yang belum pernah dicoba dipulihkan belum tentu backup. Uji restore ke
+> database kosong sekali waktu.
 
-```bash
-mysqldump -u masjid -p masjid_annur > ~/backup-$(date +%F).sql
-tar -czf ~/storage-$(date +%F).tar.gz storage/app/public
-```
-
-Dua hal itu yang tidak bisa dibuat ulang: isi database dan berkas unggahan.
-Kodenya selalu bisa di-clone lagi.
-
-Otomatiskan harian:
-
-```cron
-0 2 * * * mysqldump -u masjid -p'<password>' masjid_annur | gzip > /backup/db-$(date +\%F).sql.gz
-```
-
-> Backup yang belum pernah dicoba dipulihkan belum tentu backup. Uji restore
-> ke database kosong sekali waktu.
+**Rollback:** Coolify menyimpan image dari deploy sebelumnya, dan menu
+**Rollback** bisa menyalakannya kembali. Migrasi database **tidak** ikut mundur —
+karena itu backup sebelum push yang membawa migrasi.
 
 ---
 
 ## 11. Memasang untuk Masjid Lain
 
-Kodebase ini dirancang ulang-pakai (PRD bagian 13). Untuk masjid kedua:
+Kodebase ini dirancang ulang-pakai (PRD bagian 13). Untuk masjid kedua di server
+yang sama:
 
-1. Clone ke direktori terpisah, buat database terpisah.
-2. Sesuaikan `.env`: `APP_NAME`, `APP_URL`, kredensial DB, dan **`APP_TIMEZONE`**
-   sesuai zona masjid tersebut.
-3. Sesuaikan `PRAYER_API_LATITUDE` / `PRAYER_API_LONGITUDE` ke koordinat masjid,
-   atau ubah belakangan lewat **Pengaturan Umum**.
-4. Buat kunci VAPID **baru** — jangan pakai ulang milik masjid lain.
-5. Jalankan `php artisan migrate --force` lalu `php artisan db:seed --force`.
+1. Buat resource MySQL baru (bagian 3).
+2. Buat aplikasi baru dari repository yang sama (bagian 4), dengan:
+   - `APP_KEY` **baru**, `APP_NAME`, `APP_URL`, kredensial DB, dan
+     **`APP_TIMEZONE`** sesuai zona masjid tersebut;
+   - `PRAYER_API_LATITUDE` / `PRAYER_API_LONGITUDE` sesuai koordinat masjid;
+   - port berikutnya yang masih kosong, misalnya `127.0.0.1:8088:80`;
+   - volume sendiri di `/app/storage/app/public`.
+3. Tambahkan Public Hostname baru di tunnel menuju port tersebut (bagian 5).
+4. Tambahkan Scheduled Task (bagian 6) dan kunci VAPID **baru** (bagian 8).
+5. Deploy, lalu jalankan perintah data awal lewat Terminal (bagian 4.5).
 6. Isi identitas, rekening donasi, QRIS, dan struktur pengurus lewat admin panel.
 
-Tidak ada nilai khusus Masjid An-Nur yang tertanam di dalam kode — semuanya
-lewat `.env` atau tabel pengaturan. Zona waktu, koordinat, metode hisab, dan
-identitas masjid semuanya bisa diubah tanpa menyentuh kode.
+Tidak ada nilai khusus Masjid An-Nur yang tertanam di kode — semuanya lewat
+environment atau tabel pengaturan.
+
+### Tanpa Coolify
+
+Image yang sama bisa dijalankan di host Docker mana pun. Perintah berikut adalah
+padanan dari yang dikerjakan Coolify, **belum diuji di luar Coolify**:
+
+```bash
+docker build -t masjid .
+docker volume create masjid-storage
+docker run -d --name masjid --restart unless-stopped \
+  --env-file .env.production \
+  -p 127.0.0.1:8087:80 \
+  -v masjid-storage:/app/storage/app/public \
+  masjid
+```
+
+Tambahkan cron di host sebagai pengganti Scheduled Task:
+
+```cron
+* * * * * docker exec masjid php artisan schedule:run >> /dev/null 2>&1
+```
+
+Dua catatan: berkas `--env-file` tidak membuang tanda kutip, jadi tulis
+`APP_NAME=Masjid An-Nur` tanpa kutip. Dan tanpa proxy atau tunnel di depannya,
+isi `SERVER_NAME` dengan nama domain serta buka port 80 dan 443 — FrankenPHP
+akan menerbitkan sertifikat HTTPS sendiri.
 
 ---
 
 ## 12. Troubleshooting Production
 
+Log aplikasi ada di dalam container dan hilang saat redeploy. Baca lewat
+Terminal: `tail -n 50 storage/logs/laravel.log`.
+
+### Build & container
+
 | Masalah | Penyebab & Solusi |
 |---|---|
-| Error 500 di semua halaman | Cek `storage/logs/laravel.log`. Paling sering: izin `storage/` atau `APP_KEY` kosong |
-| Perubahan `.env` tidak berpengaruh | `php artisan config:clear` lalu `config:cache` |
-| Tampilan polos tanpa gaya | `public/build` belum ada. Jalankan `npm run build` |
-| Gambar upload 404 | `php artisan storage:link` belum dijalankan, atau symlink hilang setelah deploy ulang |
-| Jadwal sholat berhenti / "Habis" | Cron tidak jalan. Cek `crontab -l -u www-data` dan uji `php artisan schedule:run` manual |
-| Waktu sholat meleset berjam-jam | `APP_TIMEZONE` salah atau config masih ter-cache |
-| Push notification tidak terkirim | Butuh HTTPS. Cek kunci VAPID terisi dan pengingat aktif di Pengaturan Umum |
+| Build gagal: `composer install` menolak karena `ext-intl` | Composer harus berjalan di PHP yang sama dengan runtime. Jangan kembali ke image `composer:2` di tahap `vendor` |
+| Build gagal di tahap npm dengan `EAI_AGAIN` | Build mencoba mengunduh sesuatu selain paket npm. Jangan kembalikan plugin font online di `vite.config.js`; font ada di `resources/fonts/` |
+| Container restart terus; log berisi `error parsing regexp` atau `invalid or unsupported Perl syntax` | Caddyfile memakai pola yang tidak didukung RE2 (mis. lookahead `(?!`). Hapus aturannya (bagian 2) |
+| Deploy tak kunjung selesai / container `unhealthy` | Di Terminal: `curl -fsS http://127.0.0.1/up`. Bila gagal, lihat log container; bila berhasil, periksa setelan Healthcheck Coolify (path `/up`, port `80`) |
+| Kode baru tidak aktif setelah push | Lihat GitHub → Settings → Webhooks → **Recent Deliveries**: harus 200. Pastikan Auto Deploy aktif. Jangan menyunting berkas lewat Terminal — opcache tidak membaca ulang |
+
+### Akses & jaringan
+
+| Masalah | Penyebab & Solusi |
+|---|---|
+| Container sehat tapi situs tidak menjawab / 502 | **Ports Exposes** bukan `80` |
+| `coolify.<domain>` terbuka, `masjid.<domain>` tidak | Rute Public Hostname di tunnel belum ada (bagian 5) |
+| Rute tunnel ada, tapi Cloudflare menampilkan error | Aplikasi tidak menjawab di `localhost:8087`. Di server: `curl -I http://127.0.0.1:8087/` dan `docker ps \| grep 8087`. Bila `cloudflared` bukan network `host`, lihat bagian 4.2 |
+| Situs bisa dibuka dari jaringan lokal lewat `:8087` | Port Mappings masih `8087:80`. Ubah ke `127.0.0.1:8087:80`, lalu Redeploy |
+| securityheaders.com tidak menemukan HSTS | Aplikasi tidak tahu dirinya diakses lewat HTTPS. Pastikan `TRUSTED_PROXIES` terisi, lalu Restart |
+
+### Aplikasi
+
+| Masalah | Penyebab & Solusi |
+|---|---|
+| Error 500 di semua halaman | Baca log. Paling sering: `APP_KEY` kosong atau `DB_HOST` salah |
+| `SQLSTATE[HY000] [2002]` | `DB_HOST` bukan host internal MySQL, atau resource database belum Start |
+| Perubahan environment tidak berpengaruh | Setelah Save perlu **Restart** — konfigurasi dibekukan saat container start |
+| Admin panel tampil sebagai HTML polos | Aset Filament belum dibuat. Seharusnya dikerjakan entrypoint (`filament:assets`); periksa log container saat start |
+| Gambar unggahan hilang setelah redeploy | Volume tidak terpasang (bagian 4.3). Berkas yang diunggah sebelum volume ada tidak bisa dipulihkan |
+| Gambar unggahan 404 padahal berkasnya ada | Symlink `public/storage` hilang. Restart — entrypoint membuatnya ulang |
+| Upload besar gagal | Batasnya 20 MB (`upload_max_filesize` di `Dockerfile`) |
+| Tidak bisa login padahal akun ada | Password dari seeder tidak tercatat. Reset lewat Terminal — lihat di bawah |
+| Menu admin tidak lengkap | `php artisan shield:generate --all --panel=admin` lalu `php artisan permission:cache-reset` |
+| Jadwal sholat berhenti / "Habis" | Scheduler tidak jalan. Periksa riwayat Scheduled Task, lalu jalankan `php artisan masjid:sync-prayer-schedules` manual |
+| Waktu sholat meleset berjam-jam | `APP_TIMEZONE` salah, atau belum Restart setelah diubah |
+| Push notification tidak terkirim | Kunci VAPID kosong, pengingat belum diaktifkan di Pengaturan Umum, atau belum ada jamaah berlangganan |
 | Lonceng notifikasi kosong | Cek `DB::table('jobs')->count()`. Bila menumpuk, ada kode yang mengantrekan notifikasi — seharusnya dikirim langsung |
 | Tautan notifikasi salah alamat | `APP_URL` tidak sesuai domain produksi |
-| Menu admin tidak lengkap | `php artisan shield:generate --all --panel=admin` lalu `permission:cache-reset` |
-| Upload besar gagal diam-diam | Selaraskan `request_body max_size` (Caddyfile) dengan `upload_max_filesize` & `post_max_size` (php.ini FrankenPHP) |
-| Situs tidak bisa diakses setelah deploy | `sudo systemctl status frankenphp` dan `sudo journalctl -u frankenphp -n 50` |
-| Sertifikat HTTPS gagal terbit | Port 80 tertutup (dipakai tantangan ACME) atau DNS belum mengarah ke server. Cek `journalctl -u frankenphp | grep -i acme` |
-| Kode baru tidak aktif setelah update | Bila memakai worker mode, jalankan `php artisan octane:reload`. Di mode klasik, `sudo systemctl reload frankenphp` |
-| Ekstensi PHP ada di `php -m` tapi error saat request | PHP sistem dan PHP bawaan FrankenPHP berbeda. Cek dengan `frankenphp php-cli -m` |
-| Fitur di halaman publik tidak bereaksi; konsol browser berisi `violates the following Content Security Policy` | Ada skrip atau atribut `on…=` inline yang diblokir CSP publik. Sementara: `CSP_REPORT_ONLY=true` (bagian 3). Permanen: pindahkan perilakunya ke `resources/js/app.js` |
+
+### Content-Security-Policy
+
+| Masalah | Penyebab & Solusi |
+|---|---|
+| Fitur di halaman publik tidak bereaksi; konsol browser berisi `violates the following Content Security Policy` | Ada skrip atau atribut `on…=` inline yang diblokir CSP publik. Sementara: `CSP_REPORT_ONLY=true` (bagian 4.4). Permanen: pindahkan perilakunya ke `resources/js/app.js` |
 | Peta di halaman kontak kosong | Tautan harus berupa embed Google Maps. Domain peta lain diblokir `frame-src` — tambahkan di `SecurityHeaders::PUBLIK` bila memang perlu |
-| securityheaders.com tidak menemukan HSTS | Aplikasi tidak tahu dirinya diakses lewat HTTPS. Pastikan `TRUSTED_PROXIES` terisi, lalu cache ulang config |
 | Pratinjau gambar di form admin berupa kotak abu-abu (nama berkas terlihat, gambarnya tidak) | CSP admin memblokir Web Worker `blob:` milik FilePond. Pastikan `worker-src 'self' blob:` ada di `SecurityHeaders::ADMIN` |
+
+### Reset password pengurus
+
+Di tab **Terminal** aplikasi:
+
+```bash
+php artisan tinker
+```
+
+```php
+App\Models\User::where('email', 'email@pengurus')->firstOrFail()->update(['password' => 'password-baru-yang-kuat']);
+```
+
+Model `User` memakai cast `hashed`, jadi password otomatis di-hash — jangan
+membungkusnya dengan `Hash::make()`. Setelah berhasil masuk, minta pengurus
+menggantinya lagi lewat halaman **Profil**.
 
 ---
 
 ## 13. Ringkasan Keamanan
 
 - [ ] `APP_DEBUG=false` dan `APP_ENV=production`
-- [ ] `root` di Caddyfile menunjuk ke `public/`, bukan folder proyek
-- [ ] HTTPS aktif dengan sertifikat Let's Encrypt, bukan sertifikat internal Caddy
-- [ ] FrankenPHP berjalan sebagai `www-data`, bukan `root`
-- [ ] `systemctl enable frankenphp` sudah dijalankan (tahan reboot)
+- [ ] `APP_KEY` terisi dan salinannya tersimpan di luar server
+- [ ] `SESSION_SECURE_COOKIE=true`
+- [ ] Port aplikasi terikat ke `127.0.0.1` — cek dengan `docker ps` (bagian 9 poin 14)
+- [ ] MySQL: Ports Mappings kosong, *Make it publicly available* tidak dicentang
 - [ ] Password akun dummy sudah diganti atau akunnya dihapus
 - [ ] Password database kuat dan berbeda dari akun lain
-- [ ] `storage/` dan `bootstrap/cache/` 775, sisanya tidak ditulis web server
 - [ ] `DemoContentSeeder` tidak pernah dijalankan di server
-- [ ] Backup harian berjalan dan **pernah diuji restore**
-- [ ] `composer install` memakai `--no-dev`
-- [ ] Header keamanan terkirim — periksa di securityheaders.com (sebelum audit nilainya F)
+- [ ] Volume `masjid-storage` terpasang di `/app/storage/app/public`
+- [ ] Backup database terjadwal, isi volume ikut dicadangkan, dan **pernah diuji restore**
+- [ ] Header keamanan terkirim — securityheaders.com (saat ini A+)
 - [ ] `CSP_REPORT_ONLY` tidak diisi; `true` hanya untuk keadaan darurat
-- [ ] Bila `TRUSTED_PROXIES=*`, port aplikasi hanya terikat ke `127.0.0.1`
+- [ ] `TRUSTED_PROXIES=*` hanya bersama ikatan `127.0.0.1`
+- [ ] Kunci VAPID privat dan `APP_KEY` tidak pernah di-commit
+- [ ] Webhook GitHub memakai secret yang sama dengan di Coolify
 
 Rate limiting form publik (testimoni, saran, RSVP, pendaftaran) sudah aktif dari
 kode sesuai PRD bagian 6 — tidak perlu konfigurasi tambahan di server.

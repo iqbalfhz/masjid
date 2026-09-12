@@ -217,7 +217,8 @@ class ManageMosqueSetting extends Page
                                     ->columnSpanFull(),
 
                                 TextInput::make('prayer_reminder_settings.minutes_before')
-                                    ->label('Kirim berapa menit sebelum waktu sholat')
+                                    ->label('Jeda pengingat bawaan (menit)')
+                                    ->helperText('Nilai awal yang terpilih di halaman jadwal sholat. Jamaah tetap bisa menggantinya sendiri.')
                                     ->numeric()
                                     ->minValue(1)
                                     ->maxValue(60)

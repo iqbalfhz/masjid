@@ -9,9 +9,17 @@
     <title>@yield('title', $setting->name) — {{ $setting->name }}</title>
     <meta name="description" content="@yield('description', $setting->description ?? $setting->tagline)">
 
-    @if ($setting->logo)
-        <link rel="icon" href="{{ Storage::url($setting->logo) }}">
-    @endif
+    <link rel="icon" href="{{ $setting->logo ? Storage::url($setting->logo) : asset('images/icon-192.png') }}">
+
+    {{--
+        Manifest membuat situs bisa dipasang ke Layar Utama. Di iPhone itu bukan
+        sekadar pintasan: Safari hanya mengizinkan Web Push untuk web app yang
+        terpasang, jadi tanpa baris ini pengingat sholat mustahil diaktifkan
+        dari iPhone.
+    --}}
+    <link rel="manifest" href="{{ route('site.webmanifest') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $setting->name }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

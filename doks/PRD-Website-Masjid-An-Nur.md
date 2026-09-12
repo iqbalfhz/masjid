@@ -92,6 +92,25 @@ Dibutuhkan sebuah **website publik** yang informatif sekaligus interaktif sebaga
 - Override manual oleh admin jika ada penyesuaian lokal
 - **Reminder push notification**: jamaah bisa subscribe (opt-in browser notification) untuk diingatkan menjelang tiap waktu sholat
 
+> **Improvisasi: web app manifest demi iPhone.** Safari di iOS hanya membuka Web
+> Push untuk situs yang dipasang ke Layar Utama sebagai web app, dan itu
+> mensyaratkan manifest dengan `display: standalone`. Tanpa itu seluruh pengguna
+> iPhone tertutup dari fitur ini, dan tombolnya diam tanpa penjelasan. Karena itu
+> ditambahkan `WebManifestController` (rute `/site.webmanifest`, isinya mengikuti
+> Pengaturan Umum tiap masjid), ikon aplikasi di `public/images`, tautan manifest
+> dan `apple-touch-icon` di layout publik, serta pesan petunjuk "Tambahkan ke
+> Layar Utama" bagi browser yang belum mendukung. Ikon notifikasi kini juga
+> mengikuti logo masjid — sebelumnya menunjuk berkas yang tidak pernah ada,
+> sehingga notifikasi tampil dengan ikon bawaan browser.
+>
+> Nada dering **tidak** bisa ditentukan aplikasi: Web Push tidak punya opsi suara,
+> dan yang menentukannya adalah saluran notifikasi milik browser di sistem operasi.
+>
+> Isian **jeda pengingat** di Pengaturan Umum semula tidak dipakai di mana pun —
+> pengurus bisa mengubahnya tanpa efek apa pun. Kini nilainya menjadi pilihan
+> bawaan di halaman jadwal sholat dan cadangan saat jamaah tidak memilih sendiri.
+> `tests/Feature/WebAppManifestTest.php` dan `PrayerScheduleTest` menjaga keduanya.
+
 #### 5.1.3 Kajian & Kegiatan
 - Daftar kajian rutin (ustadz, tema, hari/jam, lokasi) dan kalender kegiatan tahunan
 - Detail per kegiatan: deskripsi, poster/flyer, tanggal
@@ -522,6 +541,16 @@ lokal bila dianggap perlu.
 | Pencarian Global | Laravel Scout (driver database/meilisearch ringan) | Pencarian lintas modul yang cepat |
 | Storage Media | Local storage / S3-compatible (opsional) | Untuk galeri, e-library, foto/video |
 | Export PDF | Laravel DomPDF / Spatie PDF | Untuk laporan keuangan & rekap kurban/zakat |
+| Web Server | FrankenPHP (mode klasik) | PHP tertanam di server berbasis Caddy, menggantikan Nginx + PHP-FPM |
+| Deploy Produksi | Coolify (self-hosted) + `Dockerfile`, Cloudflare Tunnel | Push ke `main` langsung menjadi deploy; tidak ada port server yang dibuka ke internet |
+
+> **Improvisasi saat deploy.** Rancangan awal menyebut hosting shared/VPS
+> sederhana (bagian 6). Yang terpasang: Coolify di VM Proxmox milik sendiri,
+> satu container dari `Dockerfile`, MySQL sebagai resource Coolify terpisah,
+> berkas unggahan di volume persisten, dan Cloudflare Tunnel sebagai pintu
+> masuk. Sengaja tanpa Redis, queue worker, dan docker-compose — alasannya di
+> Panduan Deploy bagian 1. Opsi VPS biasa tetap terbuka: image yang sama bisa
+> dijalankan di host Docker mana pun (Panduan Deploy bagian 11).
 
 ### 7.1 Plugin Filament yang Digunakan
 
